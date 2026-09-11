@@ -159,29 +159,42 @@ section.is-quiet .sh h2{transition:color .25s var(--ease)}
 .foot .keep b{color:var(--text-2);font-weight:400}
 
 /* transfer */
-.dest{position:relative;display:grid;grid-template-columns:1fr 1fr;padding:3px;margin-bottom:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg-2);box-shadow:inset 0 1px 2px rgba(0,0,0,.6),inset 0 0 0 1px rgba(0,0,0,.2)}
-.dest .ind{position:absolute;top:3px;left:3px;width:calc(50% - 3px);height:calc(100% - 6px);border-radius:7px;background:var(--btn);box-shadow:var(--sh-primary);transition:transform .32s var(--ease);pointer-events:none}
-.dest[data-i="1"] .ind{transform:translateX(100%)}
-.dest button{position:relative;z-index:1;height:36px;border:0;border-radius:7px;background:transparent;font-size:13px;font-weight:500;color:var(--text-3);transition:color .25s var(--ease)}
+.dest{position:relative;display:grid;grid-template-columns:1fr 1fr;padding:3px;margin-bottom:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg-2);box-shadow:inset 0 1px 2px rgba(0,0,0,.6),inset 0 0 0 1px rgba(0,0,0,.2);isolation:isolate}
+.dest button{position:relative;z-index:1;height:36px;border:0;border-radius:7px;background:transparent;font-size:13px;font-weight:500;color:var(--text-3);transition:color .2s var(--ease),opacity .1s var(--ease)}
 .dest button:hover{color:var(--text-2)}
-.dest button[aria-pressed="true"]{color:var(--btn-text)}
-.dest button[aria-pressed="true"]:hover{color:var(--btn-text)}
+.dest button[aria-pressed="true"]{color:transparent}
+.dest button[aria-pressed="false"]:active{opacity:.6}
+/* the pill: leading edge stretches ahead, trailing edge catches up */
+.dest .ind{position:absolute;top:3px;left:3px;width:calc(50% - 3px);height:calc(100% - 6px);border-radius:7px;background:var(--btn);box-shadow:var(--sh-primary);pointer-events:none;z-index:0;transform-origin:right center;transition:transform .28s var(--ease)}
+.dest[data-i="1"] .ind{transform:translateX(100%);transform-origin:left center}
+.dest.moving[data-i="0"] .ind{transform:scaleX(1.04)}
+.dest.moving[data-i="1"] .ind{transform:translateX(100%) scaleX(1.04)}
+.dest[data-i="0"] button[aria-pressed="true"]:active ~ .ind{transform:scale(.96);transition-duration:.1s}
+.dest[data-i="1"] button[aria-pressed="true"]:active ~ .ind{transform:translateX(100%) scale(.96);transition-duration:.1s}
+/* dark labels, clipped to the pill, so the text is dark exactly where the pill is at every frame */
+.dest .ink{position:absolute;inset:0;padding:3px;display:grid;grid-template-columns:1fr 1fr;pointer-events:none;z-index:2;clip-path:inset(3px 50% 3px 3px round 7px);transition:clip-path .28s var(--ease)}
+.dest[data-i="1"] .ink{clip-path:inset(3px 3px 3px 50% round 7px)}
+.dest .ink span{display:grid;place-content:center;height:36px;font-size:13px;font-weight:500;color:var(--btn-text)}
 .methods[hidden],.lead[hidden]{display:none}
 .methods{display:grid;margin-bottom:10px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);box-shadow:var(--sh-card);overflow:hidden}
-.method{position:relative;display:grid;grid-template-columns:16px 1fr auto;grid-template-rows:auto auto;column-gap:12px;row-gap:1px;align-items:start;text-align:left;padding:12px 14px;border:0;background:transparent;cursor:pointer;transition:background .2s var(--ease)}
+.method{position:relative;display:grid;grid-template-columns:16px 1fr auto;grid-template-rows:auto auto;column-gap:12px;row-gap:1px;align-items:start;text-align:left;padding:12px 14px;border:0;background:transparent;cursor:pointer;transition:background .18s var(--ease)}
 .method + .method{border-top:1px solid var(--line)}
 .method:hover{background:rgba(255,255,255,.02)}
 .method[aria-checked="true"]{background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.025))}
-.method .dot{grid-row:1/3;align-self:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--line-3);background:var(--surface-2);display:grid;place-content:center;transition:border-color .15s,background .15s;box-shadow:inset 0 1px 1px rgba(0,0,0,.4)}
-.method .dot::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--bg);transform:scale(0);transition:transform .22s var(--ease-out)}
-.method[aria-checked="true"] .dot{background:#fff;border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.08)}
-.method[aria-checked="true"] .dot::after{transform:scale(1)}
+.method .dot{position:relative;grid-row:1/3;align-self:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--line-3);background:var(--surface-2);display:grid;place-content:center;box-shadow:inset 0 1px 1px rgba(0,0,0,.4);transition:border-color .12s var(--ease),background .12s var(--ease),transform .1s var(--ease)}
+.method:active .dot{transform:scale(.9)}
+.method .dot::before{content:"";position:absolute;inset:-1px;border-radius:50%;pointer-events:none}
+@keyframes bloom{from{box-shadow:0 0 0 0 rgba(255,255,255,.35)}to{box-shadow:0 0 0 6px rgba(255,255,255,0)}}
+.method[aria-checked="true"] .dot::before{animation:bloom .24s var(--ease-out) both}
+.method .dot::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--bg);transform:scale(.6);opacity:0;transition:transform .12s var(--ease),opacity .12s var(--ease)}
+.method[aria-checked="true"] .dot{background:#fff;border-color:#fff;transition-duration:.2s}
+.method[aria-checked="true"] .dot::after{transform:scale(1);opacity:1;transition:transform .2s var(--ease-out),opacity .2s var(--ease-out)}
 .method .mt{grid-column:2;font-size:13.5px;font-weight:500;color:var(--text-2);transition:color .12s}
 .method[aria-checked="true"] .mt,.method:hover .mt{color:var(--text)}
 .method .md{grid-column:2;font-size:12.5px;color:var(--text-3);line-height:1.45}
 .method .md em{font-style:normal;color:var(--text-2)}
-.method .rec{grid-column:3;grid-row:1/3;align-self:center;font-size:11px;font-weight:500;color:var(--text-2);border:1px solid var(--line-2);border-radius:999px;padding:2px 8px;opacity:0;transform:scale(.9);white-space:nowrap;transition:opacity .2s var(--ease),transform .25s var(--ease-out)}
-.method.is-rec .rec{opacity:1;transform:none}
+.method .rec{grid-column:3;grid-row:1/3;align-self:center;font-size:11px;font-weight:500;color:var(--text-2);border:1px solid var(--line-2);border-radius:999px;padding:2px 8px;opacity:0;transform:translateX(4px);white-space:nowrap;transition:opacity .1s var(--ease),transform .1s var(--ease)}
+.method.is-rec .rec{opacity:1;transform:none;transition:opacity .18s var(--ease-out),transform .18s var(--ease-out)}
 .tbox{padding:14px}
 .tree{margin:0;max-height:260px;overflow:auto;font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--text-2);padding:11px 13px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2);box-shadow:inset 0 1px 3px rgba(0,0,0,.5);white-space:pre}
 .tree i{font-style:normal;color:var(--text-3)}
@@ -227,7 +240,7 @@ kbd{font-family:var(--mono);font-size:10.5px;color:var(--text);background:var(--
 footer a{color:var(--text-2);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line-3)}
 footer a:hover{color:var(--text)}
 footer{margin-top:32px;font-size:12px;flex-wrap:wrap;color:var(--text-3);display:flex;gap:16px}
-@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition-property:opacity,color,background-color,border-color!important;transition-duration:.15s!important}.hero,.hero .flow,section,footer,.log,.tbox > div{opacity:1!important;transform:none!important}.dest .ink{transition:none!important}}
 </style>
 </head>
 <body>
@@ -289,9 +302,10 @@ footer{margin-top:32px;font-size:12px;flex-wrap:wrap;color:var(--text-3);display
     <div class="sh"><span class="k">03</span><h2>Transfer</h2></div>
     <p class="lead" id="whereLead">Where are these chats going?</p>
     <div class="dest" role="group" data-i="0" id="dest">
-      <span class="ind"></span>
       <button data-dest="claude" aria-pressed="true">Claude</button>
       <button data-dest="chatgpt" aria-pressed="false">ChatGPT</button>
+      <span class="ind"></span>
+      <span class="ink" aria-hidden="true"><span>Claude</span><span>ChatGPT</span></span>
     </div>
     <p class="lead" id="howLead" style="margin-top:14px">How do you want to move them?</p>
     <div class="methods" role="radiogroup" id="methods">
@@ -820,7 +834,7 @@ function build(){
 /* events */
 document.getElementById('q').oninput=e=>{S.q=e.target.value;render();};
 document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.seg button').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');S.filter=b.dataset.src;render();});
-document.querySelectorAll('.dest button').forEach((b,i)=>b.onclick=()=>{document.querySelectorAll('.dest button').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');b.parentElement.dataset.i=i;S.dest=b.dataset.dest;build();});
+let destT;document.querySelectorAll('.dest button').forEach((b,i)=>b.onclick=()=>{const d=b.parentElement;if(d.dataset.i===String(i))return;document.querySelectorAll('.dest button').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');d.dataset.i=i;d.classList.add('moving');clearTimeout(destT);destT=setTimeout(()=>d.classList.remove('moving'),200);S.dest=b.dataset.dest;build();});
 document.getElementById('selAll').onchange=e=>{visible().forEach(c=>e.target.checked?S.checked.add(c.id):S.checked.delete(c.id));render();};
 function setChecked(id,on){
   on?S.checked.add(id):S.checked.delete(id);
