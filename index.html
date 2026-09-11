@@ -98,6 +98,9 @@ section{margin-bottom:36px}
 .drop p{margin:5px 0 14px;color:var(--text-3);font-size:12.5px}
 .log{margin-top:12px;font-family:var(--mono);font-size:12.5px;color:var(--text-2);white-space:pre-wrap;padding:10px 14px;border-radius:8px;background:var(--surface);border:1px solid var(--line)}
 .log:empty{display:none}
+.log .warn{color:var(--text-2);margin-top:6px;padding-top:6px;border-top:1px solid var(--line);font-family:var(--font);white-space:normal}
+.log .warn b{font-weight:500}
+.log .warn a{color:var(--text)}
 .log{animation:rise .3s var(--ease-out) both}
 .note{margin:10px 0 0;font-size:12px;color:var(--text-3);display:flex;gap:8px;align-items:center}
 .note::before{content:"";width:6px;height:6px;border-radius:50%;background:#5DD39E;box-shadow:0 0 8px rgba(93,211,158,.5);flex:none}
@@ -207,9 +210,16 @@ textarea.out:focus{border-color:var(--line-2)}
 .stats{display:flex;gap:14px;align-items:center;margin:10px 0 0;font-family:var(--mono);font-size:12px;color:var(--text-3)}
 .next{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
 .next .hint{font-size:13px;color:var(--text-3)}
+.chat.is-cursor .head{box-shadow:inset 0 0 0 1px var(--line-3);border-radius:6px}
+.keys{position:fixed;right:20px;bottom:20px;z-index:8;width:280px;padding:12px 14px;background:var(--surface);border:1px solid var(--line-2);border-radius:10px;box-shadow:var(--sh-card);animation:panelIn .2s var(--ease-out) both}
+.keys .kt{font-size:12px;font-weight:500;color:var(--text);margin-bottom:8px}
+.keys .kg{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:12px;color:var(--text-2);align-items:center}
+.keys .kg > span:first-child,.keys .kg > span:nth-child(odd){display:flex;gap:3px}
+kbd{font-family:var(--mono);font-size:10.5px;color:var(--text);background:var(--surface-2);border:1px solid var(--line-2);border-bottom-width:2px;border-radius:4px;padding:1px 5px;line-height:1.4}
+.foot .keep .kh{margin-left:8px;color:var(--text-3)}
 .toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,0) scale(1);background:#FFFFFF;color:var(--bg);padding:8px 13px;border-radius:8px;font-size:12.5px;font-weight:500;box-shadow:0 12px 32px -12px rgba(0,0,0,.9);z-index:9;opacity:1;transition:opacity .2s var(--ease),transform .3s var(--ease);pointer-events:none}
 .toast[hidden]{display:block;opacity:0;transform:translate(-50%,10px) scale(.96);transition-duration:.15s,.2s}
-footer{margin-top:32px;font-size:12px;color:var(--text-3);display:flex;gap:16px}
+footer{margin-top:32px;font-size:12px;flex-wrap:wrap;color:var(--text-3);display:flex;gap:16px}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -346,7 +356,19 @@ footer{margin-top:32px;font-size:12px;color:var(--text-3);display:flex;gap:16px}
     </div>
   </section>
 
-  <footer><span>Nothing leaves this browser.</span><span>Imported chats stay on this device until you <button class="lnk" id="clearAll2">clear them</button>.</span></footer>
+  <footer><span>Nothing leaves this browser.</span><span id="parserStamp"></span><span>Imported chats stay on this device until you <button class="lnk" id="clearAll2">clear them</button>.</span></footer>
+</div>
+<div class="keys" id="keys" hidden>
+  <div class="kt">Keyboard</div>
+  <div class="kg">
+    <span><kbd>j</kbd><kbd>k</kbd></span><span>Move through the list</span>
+    <span><kbd>space</kbd></span><span>Tick or untick</span>
+    <span><kbd>enter</kbd></span><span>Open or close a chat</span>
+    <span><kbd>c</kbd></span><span>Copy what's in front of you</span>
+    <span><kbd>n</kbd><kbd>p</kbd></span><span>Next or previous, one at a time</span>
+    <span><kbd>/</kbd></span><span>Search</span>
+    <span><kbd>?</kbd></span><span>Show or hide this</span>
+  </div>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -363,14 +385,32 @@ async function dbPut(items){const db=await openDB();await new Promise((res,rej)=
 async function dbClear(){const db=await openDB();await new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).clear();tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});}
 
 /* parsers -> {id, source, title, created, updated, messages:[{role,text,ts}]} */
+/* Each parser carries the shape it was written against. `looksLike` says "this is probably a <label> export";
+   `complete` says "and it has the fields I need". Looks-like without complete means the format has drifted. */
+const PARSERS={
+  chatgpt:{label:'ChatGPT',updated:'September 2026',
+    looksLike:o=>!!o&&typeof o==='object'&&('mapping' in o||'conversation_id' in o||('title' in o&&'create_time' in o)),
+    complete:o=>!!o&&o.mapping&&typeof o.mapping==='object'&&Object.values(o.mapping).some(n=>n&&n.message&&n.message.author&&n.message.content)},
+  claude:{label:'Claude',updated:'September 2026',
+    looksLike:o=>!!o&&typeof o==='object'&&!('prompt_template' in o)&&!Array.isArray(o.docs)&&('chat_messages' in o||('uuid' in o&&'name' in o&&'created_at' in o)),
+    complete:o=>Array.isArray(o.chat_messages)&&(o.chat_messages.length===0||o.chat_messages.some(m=>m&&'sender' in m&&('text' in m||Array.isArray(m.content))))},
+  project:{label:'Claude Project',updated:'September 2026',
+    looksLike:o=>!!o&&typeof o==='object'&&('prompt_template' in o||Array.isArray(o.docs)),
+    complete:o=>'prompt_template' in o&&Array.isArray(o.docs)&&'name' in o},
+};
 function detect(data){
   let arr=Array.isArray(data)?data:(data&&Array.isArray(data.conversations)?data.conversations:(data&&typeof data==='object'?[data]:null));
-  if(!arr||!arr.length)return{kind:null,arr:[]};
-  const s=arr.find(x=>x&&typeof x==='object')||{};
-  if(s.mapping)return{kind:'chatgpt',arr};
-  if(s.chat_messages)return{kind:'claude',arr};
-  if(s.prompt_template!==undefined||Array.isArray(s.docs))return{kind:'project',arr};
-  return{kind:null,arr};
+  if(!arr||!arr.length)return{kind:null,arr:[],drift:false};
+  const sample=arr.filter(x=>x&&typeof x==='object').slice(0,25);
+  if(!sample.length)return{kind:null,arr:[],drift:false};
+  for(const kind of ['project','chatgpt','claude']){
+    const p=PARSERS[kind];
+    const hits=sample.filter(p.looksLike).length;
+    if(hits<Math.ceil(sample.length/2))continue;
+    const ok=sample.filter(p.complete).length;
+    return{kind,arr,drift:ok<Math.ceil(hits/2)};
+  }
+  return{kind:null,arr,drift:false};
 }
 function parseProjects(arr){
   const out=[];
@@ -429,7 +469,9 @@ const firstLine=ms=>((ms.find(m=>m.role==='user')||ms[0]).text.split('\n')[0]).s
 const hash=s=>{let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return(h>>>0).toString(36);};
 
 /* import */
-const logEl=document.getElementById('log');const log=t=>{logEl.textContent+=(logEl.textContent?'\n':'')+t;};
+const logEl=document.getElementById('log');
+const log=t=>{const d=document.createElement('div');d.textContent=t;logEl.appendChild(d);};
+const logHTML=h=>{const d=document.createElement('div');d.className='warn';d.innerHTML=h;logEl.appendChild(d);};
 async function handleFiles(files){
   logEl.textContent='';
   const list=Array.from(files||[]);
@@ -449,18 +491,32 @@ async function handleFiles(files){
         texts.push({name:file.name,text:await file.text()});
       }else{log('  '+file.name+' is not a .zip or .json file.');continue;}
     }catch(e){log('  Could not read '+file.name+': '+e.message);continue;}
-    let fileChats=0,fileProjects=0;
+    let fileChats=0,fileProjects=0,expected={chatgpt:0,claude:0,project:0},drifted=new Set();
     for(const t of texts){
       let data;try{data=JSON.parse(t.text);}catch{unknown++;continue;}
-      const{kind,arr}=detect(data);
+      const{kind,arr,drift}=detect(data);
       if(!kind){unknown++;continue;}
-      const parsed=kind==='chatgpt'?parseChatGPT(arr):kind==='claude'?parseClaude(arr):parseProjects(arr);
+      if(drift)drifted.add(kind);
+      expected[kind]+=arr.length;
+      let parsed=[];
+      try{parsed=kind==='chatgpt'?parseChatGPT(arr):kind==='claude'?parseClaude(arr):parseProjects(arr);}catch(e){drifted.add(kind);}
       if(parsed.length)await dbPut(parsed);
       if(kind==='project')fileProjects+=parsed.length;else fileChats+=parsed.length;
     }
     chats+=fileChats;projects+=fileProjects;
-    if(fileChats||fileProjects)log('  '+[fileChats?fileChats+' chat'+(fileChats===1?'':'s'):'',fileProjects?fileProjects+' project'+(fileProjects===1?'':'s'):''].filter(Boolean).join(', ')+' found.');
-    else log('  Nothing recognisable in '+file.name+'. '+(/project/i.test(file.name)?'':'ChatGPT and Claude exports come as a .zip; Claude may send several (conversations-000.zip holds the chats, projects-000.zip holds Projects).'));
+    const exChats=expected.chatgpt+expected.claude,exProj=expected.project;
+    if(fileChats||fileProjects){
+      const parts=[];
+      if(exChats)parts.push(fileChats+' of '+exChats+' chat'+(exChats===1?'':'s'));
+      if(exProj)parts.push(fileProjects+' of '+exProj+' project'+(exProj===1?'':'s'));
+      log('  '+parts.join(', ')+' imported.'+((exChats&&fileChats<exChats)||(exProj&&fileProjects<exProj)?' The rest were empty.':''));
+    }else if(exChats||exProj){
+      log('  Found '+(exChats||exProj)+' '+(exChats?'chats':'projects')+' but imported none.');
+    }else log('  Nothing recognisable in '+file.name+'. '+(/project/i.test(file.name)?'':'ChatGPT and Claude exports come as a .zip; Claude may send several (conversations-000.zip holds the chats, projects-000.zip holds Projects).'));
+    for(const k of drifted){
+      const p=PARSERS[k];
+      logHTML('  <b>This looks like a '+p.label+' export in a newer format than this tool knows</b> (its '+p.label+' parser was last updated '+p.updated+'). Some or all of it may not have come through. <a href="https://github.com/Gikunjuu/chat-transfer/issues/new?title='+encodeURIComponent(p.label+' export format changed')+'" target="_blank" rel="noopener">Report it</a> so the parser can be updated.');
+    }
   }
   const total=chats+projects;
   if(total){
@@ -516,7 +572,7 @@ function render(){
   ['bar','selRow','footRow','readHint'].forEach(id=>document.getElementById(id).hidden=empty);
   document.getElementById('secChoose').classList.toggle('is-quiet',empty);
   listEl.parentElement.classList.toggle('is-empty',empty);
-  document.getElementById('keepNote').innerHTML=S.examples?'Examples only. Nothing has been saved.':'<b>'+S.all.length+' item'+(S.all.length===1?'':'s')+'</b> saved in this browser until you clear them.';
+  document.getElementById('keepNote').innerHTML=(S.examples?'Examples only. Nothing has been saved.':'<b>'+S.all.length+' item'+(S.all.length===1?'':'s')+'</b> saved in this browser until you clear them.')+(matchMedia('(hover:hover)').matches?'<span class="kh">Press <kbd>?</kbd> for shortcuts</span>':'');
   countEl.textContent=S.checked.size+' / '+S.all.length+' selected';
   document.getElementById('selAll').checked=vis.length>0&&vis.every(c=>S.checked.has(c.id));
   listEl.innerHTML=vis.length?vis.map(c=>`
@@ -647,11 +703,15 @@ document.getElementById('q').oninput=e=>{S.q=e.target.value;render();};
 document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.seg button').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');S.filter=b.dataset.src;render();});
 document.querySelectorAll('.dest button').forEach((b,i)=>b.onclick=()=>{document.querySelectorAll('.dest button').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');b.parentElement.dataset.i=i;S.dest=b.dataset.dest;build();});
 document.getElementById('selAll').onchange=e=>{visible().forEach(c=>e.target.checked?S.checked.add(c.id):S.checked.delete(c.id));render();};
+function setChecked(id,on){
+  on?S.checked.add(id):S.checked.delete(id);
+  const cb=listEl.querySelector('[data-check="'+CSS.escape(id)+'"]');if(cb)cb.checked=on;
+  countEl.textContent=S.checked.size+' / '+S.all.length+' selected';const vis=visible();
+  document.getElementById('selAll').checked=vis.length>0&&vis.every(c=>S.checked.has(c.id));S.step=0;build();
+}
 listEl.onclick=e=>{
   const cb=e.target.closest('[data-check]');
-  if(cb){cb.checked?S.checked.add(cb.dataset.check):S.checked.delete(cb.dataset.check);
-    countEl.textContent=S.checked.size+' / '+S.all.length+' selected';const vis=visible();
-    document.getElementById('selAll').checked=vis.length>0&&vis.every(c=>S.checked.has(c.id));S.step=0;build();return;}
+  if(cb){setChecked(cb.dataset.check,cb.checked);return;}
   const one=e.target.closest('[data-copyone]');if(one){const c=S.all.find(x=>x.id===one.dataset.copyone);copyText(md(c,Infinity),'Copied');return;}
   const op=e.target.closest('[data-open]');
   if(op){const row=op.closest('.chat'),was=row.classList.contains('open');
@@ -698,12 +758,47 @@ fi.onchange=()=>{if(fi.files.length)handleFiles(fi.files);fi.value='';};
 ['dragleave','drop'].forEach(ev=>document.addEventListener(ev,e=>{e.preventDefault();if(ev==='drop'||e.relatedTarget===null)drop.classList.remove('over');}));
 document.addEventListener('drop',e=>{if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length)handleFiles(e.dataTransfer.files);});
 
+/* keyboard */
+let CUR=-1;
+const rows=()=>Array.from(listEl.querySelectorAll('.chat'));
+function setCursor(i){
+  const r=rows();if(!r.length){CUR=-1;return;}
+  CUR=Math.max(0,Math.min(r.length-1,i));
+  r.forEach((el,k)=>el.classList.toggle('is-cursor',k===CUR));
+  r[CUR].scrollIntoView({block:'nearest',behavior:'smooth'});
+}
+const keysEl=document.getElementById('keys');
+const typing=e=>{const t=e.target;return t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable);};
+document.addEventListener('keydown',e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  if(e.key==='Escape'){if(typing(e)){e.target.blur();return;}if(!keysEl.hidden){keysEl.hidden=true;return;}if(helpWrap.classList.contains('open')){toggleHelp(false);return;}if(CUR>=0){rows().forEach(el=>el.classList.remove('is-cursor'));CUR=-1;}return;}
+  if(typing(e))return;
+  const k=e.key;
+  if(k==='?'){keysEl.hidden=!keysEl.hidden;e.preventDefault();return;}
+  if(k==='/'){$('q').focus();e.preventDefault();return;}
+  if(k==='j'||k==='ArrowDown'){setCursor(CUR+1);e.preventDefault();return;}
+  if(k==='k'||k==='ArrowUp'){setCursor(CUR-1);e.preventDefault();return;}
+  if(k===' '&&CUR>=0){const r=rows()[CUR],cb=r&&r.querySelector('[data-check]');if(cb){setChecked(cb.dataset.check,!cb.checked);}e.preventDefault();return;}
+  if(k==='Enter'&&CUR>=0){const r=rows()[CUR],op=r&&r.querySelector('[data-open]');if(op)op.click();e.preventDefault();return;}
+  if(k==='c'){
+    if(!$('pEach').hidden)$('copyEach').click();
+    else if(!$('pFile').hidden)$('copyFile').click();
+    else if(!$('pBundle').hidden&&!$('copy').disabled)$('copy').click();
+    return;
+  }
+  if(k==='n'&&!$('pEach').hidden&&!$('nextStep').disabled){$('nextStep').click();return;}
+  if(k==='p'&&!$('pEach').hidden&&!$('prevStep').disabled){$('prevStep').click();return;}
+});
+// keep the cursor ring after the list re-renders
+const _render=render;render=function(){_render();if(CUR>=0){const r=rows();if(CUR<r.length)r[CUR].classList.add('is-cursor');else CUR=-1;}};
+
 /* utils */
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtDate=ts=>ts?new Date(ts).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'';
 let tt;const toast=m=>{const t=document.getElementById('toast');t.textContent=m;t.hidden=true;requestAnimationFrame(()=>requestAnimationFrame(()=>{t.hidden=false;}));clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,2600);};
 async function copyText(text,msg){try{await navigator.clipboard.writeText(text);toast(msg);}catch{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast(msg);}catch{toast('Select the text and copy it manually');}ta.remove();}}
 
+document.getElementById('parserStamp').textContent='Parsers last updated '+PARSERS.chatgpt.updated+'.';
 load();
 })();
 </script>
