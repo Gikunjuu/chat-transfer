@@ -224,6 +224,8 @@ kbd{font-family:var(--mono);font-size:10.5px;color:var(--text);background:var(--
 .foot .keep .kh{margin-left:8px;color:var(--text-3)}
 .toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,0) scale(1);background:#FFFFFF;color:var(--bg);padding:8px 13px;border-radius:8px;font-size:12.5px;font-weight:500;box-shadow:0 12px 32px -12px rgba(0,0,0,.9);z-index:9;opacity:1;transition:opacity .2s var(--ease),transform .3s var(--ease);pointer-events:none}
 .toast[hidden]{display:block;opacity:0;transform:translate(-50%,10px) scale(.96);transition-duration:.15s,.2s}
+footer a{color:var(--text-2);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line-3)}
+footer a:hover{color:var(--text)}
 footer{margin-top:32px;font-size:12px;flex-wrap:wrap;color:var(--text-3);display:flex;gap:16px}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -377,7 +379,7 @@ footer{margin-top:32px;font-size:12px;flex-wrap:wrap;color:var(--text-3);display
     </div>
   </section>
 
-  <footer><span>Nothing leaves this browser.</span><span id="parserStamp"></span><span>Imported chats stay on this device until you <button class="lnk" id="clearAll2">clear them</button>.</span></footer>
+  <footer><span>Nothing leaves this browser.</span><span id="parserStamp"></span><span><a href="https://github.com/Gikunjuu/chat-transfer" target="_blank" rel="noopener">Source on GitHub</a></span><span>Imported chats stay on this device until you <button class="lnk" id="clearAll2">clear them</button>.</span></footer>
 </div>
 <div class="keys" id="keys" hidden>
   <div class="kt">Keyboard</div>
