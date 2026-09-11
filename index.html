@@ -87,6 +87,9 @@ section{margin-bottom:36px}
 .btn.ghost:hover{color:var(--text-2);background:var(--surface-2)}
 .btn[disabled]{opacity:.4;cursor:default;transform:none}
 .btn.sm{height:28px;padding:0 10px;font-size:12.5px}
+.btn.is-swapping{filter:blur(2px);opacity:.7}
+.btn.is-copied,.btn.is-copied.primary{background:#DDF5E8;border-color:transparent;color:#0F3D2A;box-shadow:var(--sh-primary)}
+.btn{transition:background .15s var(--ease),border-color .15s var(--ease),transform .15s var(--ease),box-shadow .15s var(--ease),opacity .12s var(--ease),filter .12s var(--ease),color .15s var(--ease)}
 
 /* import */
 .drop{padding:36px 24px;text-align:center;border-radius:var(--r);border:1px dashed var(--line-2);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,0));transition:border-color .2s var(--ease),background .2s var(--ease),transform .25s var(--ease)}
@@ -781,7 +784,7 @@ function build(){
     $('stepTitle').innerHTML=esc(c.title)+(doneHere?'<span class="done">Copied</span>':'');
     $('outEach').value=singleText(c,d);
     $('prevStep').disabled=S.step===0;$('nextStep').disabled=S.step===n-1;
-    $('copyEach').textContent=doneHere?'Copy again':isMem(c)?'Copy memory':'Copy this chat';
+    {const lbl=doneHere?'Copy again':isMem(c)?'Copy memory':'Copy this chat';if($('copyEach').classList.contains('is-copied'))$('copyEach').dataset.label=lbl;else $('copyEach').textContent=lbl;}
     if(isMem(c))$('hintEach').innerHTML='This one does not go into a chat. Paste it into '+memWhere(d)+' in the new account.';
     else $('hintEach').textContent=doneCount===n?'All '+n+' copied. Each one goes into its own new '+name+' chat.':'Copy, open a new '+name+' chat, paste. Then come back and press Next.';
     return;
@@ -817,7 +820,7 @@ function build(){
     :d==='claude'?'<b>Copy</b> the text, open Claude in the account you are moving to, start a new chat and <b>paste</b>. That one chat will remember all of these.'
     :'<b>Copy</b> the text, open ChatGPT, start a new chat and <b>paste</b>. That one chat will remember all of these.';
   if(n>1&&nMm)$('whereBundle').innerHTML+=' Your memory is included as background. It works better pasted into '+memWhere(d)+' on its own, so consider moving it separately.';
-  $('copy').textContent='Copy for '+name;
+  if($('copy').classList.contains('is-copied'))$('copy').dataset.label='Copy for '+name;else $('copy').textContent='Copy for '+name;
   let s=n===1?'':preamble(targets,d,false);
   const full=n===1?singleText(targets[0],d):s+targets.map(c=>md(c,Infinity)).join('---\n\n');
   const bigSource=full.length>40000;
@@ -845,16 +848,16 @@ function setChecked(id,on){
 listEl.onclick=e=>{
   const cb=e.target.closest('[data-check]');
   if(cb){setChecked(cb.dataset.check,cb.checked);return;}
-  const one=e.target.closest('[data-copyone]');if(one){const c=S.all.find(x=>x.id===one.dataset.copyone);copyText(md(c,Infinity),'Copied');return;}
+  const one=e.target.closest('[data-copyone]');if(one){const c=S.all.find(x=>x.id===one.dataset.copyone);copyText(md(c,Infinity),'Copied',one);return;}
   const op=e.target.closest('[data-open]');
   if(op){const row=op.closest('.chat'),was=row.classList.contains('open');
     listEl.querySelectorAll('.chat.open').forEach(r=>r.classList.remove('open'));
     if(!was){row.classList.add('open');S.open=op.dataset.open;}else S.open=null;}
 };
 document.querySelectorAll('input[name=mode]').forEach(r=>r.onchange=build);
-document.getElementById('copy').onclick=()=>copyText($('out').value,'Copied. Paste it into a new chat.');
+document.getElementById('copy').onclick=()=>copyText($('out').value,'Copied. Paste it into a new chat.',$('copy'));
 document.querySelectorAll('.method').forEach(b=>b.onclick=()=>setMethod(b.dataset.m));
-$('copyEach').onclick=async()=>{const t=S.all.filter(c=>S.checked.has(c.id))[S.step];await copyText($('outEach').value,'Copied. Paste it into a new chat, then press Next.');DONE.add(t.id);saveDone();build();};
+$('copyEach').onclick=async()=>{const t=S.all.filter(c=>S.checked.has(c.id))[S.step];const ok=await copyText($('outEach').value,'Copied. Paste it into a new chat, then press Next.');if(!ok)return;DONE.add(t.id);saveDone();build();flash($('copyEach'));};
 $('prevStep').onclick=()=>{S.step--;build();};
 $('nextStep').onclick=()=>{S.step++;build();};
 $('dlFolder').onclick=async()=>{
@@ -866,7 +869,7 @@ $('dlFolder').onclick=async()=>{
   try{const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE'});await saveBlob('chat-transfer.zip',blob,'Saved chat-transfer.zip');}
   finally{$('dlFolder').disabled=false;$('dlFolder').textContent='Download folder (.zip)';}
 };
-$('copyFile').onclick=()=>copyText($('outFile').value,'Copied. Paste it into a new file named chats.md.');
+$('copyFile').onclick=()=>copyText($('outFile').value,'Copied. Paste it into a new file named chats.md.',$('copyFile'));
 // Inside the claude.ai viewer, saves go through the downloads capability; elsewhere (Netlify, local file) a plain anchor download works.
 let dlCap=null;
 if(window.claude&&typeof window.claude.use==='function'){window.claude.use('downloads').then(ns=>{dlCap=ns;}).catch(()=>{});}
@@ -938,7 +941,24 @@ const _render=render;render=function(){_render();if(CUR>=0){const r=rows();if(CU
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtDate=ts=>ts?new Date(ts).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'';
 let tt;const toast=m=>{const t=document.getElementById('toast');t.textContent=m;t.hidden=true;requestAnimationFrame(()=>requestAnimationFrame(()=>{t.hidden=false;}));clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,2600);};
-async function copyText(text,msg){try{await navigator.clipboard.writeText(text);toast(msg);}catch{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast(msg);}catch{toast('Select the text and copy it manually');}ta.remove();}}
+async function copyText(text,msg,btn){
+  let ok=false;
+  try{await navigator.clipboard.writeText(text);ok=true;}
+  catch{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{ok=document.execCommand('copy');}catch{}ta.remove();}
+  if(!ok){toast('Select the text and copy it manually');return false;}
+  toast(msg);if(btn)flash(btn);return true;
+}
+const CHECK='<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6.5l2.6 2.5L10 3.5"/></svg>';
+function flash(btn){
+  if(!btn.dataset.label)btn.dataset.label=btn.textContent;
+  clearTimeout(btn._flashT);
+  btn.classList.add('is-swapping');
+  setTimeout(()=>{btn.innerHTML=CHECK+'Copied';btn.classList.add('is-copied');btn.classList.remove('is-swapping');},90);
+  btn._flashT=setTimeout(()=>{
+    btn.classList.add('is-swapping');
+    setTimeout(()=>{btn.textContent=btn.dataset.label;btn.classList.remove('is-copied','is-swapping');delete btn.dataset.label;},90);
+  },1500);
+}
 
 document.getElementById('parserStamp').textContent='Parsers last updated '+PARSERS.chatgpt.updated+'.';
 load();
