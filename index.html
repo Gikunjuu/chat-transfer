@@ -27,6 +27,7 @@
   --sh-primary:0 1px 2px -1px rgba(0,0,0,.7),0 6px 16px -8px rgba(255,255,255,.35),inset 0 1px 0 rgba(255,255,255,.6);
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{background:var(--bg)}
 body{margin:0;background:var(--bg) var(--glow) no-repeat;color:var(--text);font:14.5px/1.5 var(--font);-webkit-font-smoothing:antialiased;letter-spacing:-.012em}
 button,input,textarea{font:inherit;color:inherit;letter-spacing:inherit}
@@ -144,6 +145,10 @@ section{margin-bottom:36px}
 .turn.user .txt{color:var(--text)}
 .turn.tool .txt{font-family:var(--mono);font-size:12.5px;color:var(--text-3)}
 .empty{padding:40px 20px;color:var(--text-3);text-align:center;font-size:14px}
+.card.is-empty .empty{padding:34px 20px}
+section.is-quiet .sh h2,section.is-quiet .sh .k{color:var(--text-3)}
+section.is-quiet .sh h2{transition:color .25s var(--ease)}
+.sh h2{transition:color .25s var(--ease)}
 .foot{display:flex;justify-content:flex-end;padding:6px 8px;border-top:1px solid var(--line)}
 
 /* transfer */
@@ -247,24 +252,24 @@ footer{margin-top:32px;font-size:12px;color:var(--text-3);display:flex;gap:16px}
     <p class="note">Runs entirely in your browser. Your chats are never uploaded.</p>
   </section>
 
-  <section>
-    <div class="sh"><span class="k">02</span><h2>Choose chats</h2><p>Click a title to read it</p></div>
+  <section id="secChoose">
+    <div class="sh"><span class="k">02</span><h2>Choose chats</h2><p id="readHint">Click a title to read it</p></div>
     <div class="example" id="exampleNote" hidden><span>Showing three example chats.</span><button class="lnk" id="hideEx">Hide</button></div>
-    <div class="bar">
+    <div class="bar" id="bar">
       <label class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search" autocomplete="off"></label>
       <div class="seg" role="group"><button data-src="all" aria-pressed="true">All</button><button data-src="chatgpt" aria-pressed="false">ChatGPT</button><button data-src="claude" aria-pressed="false">Claude</button></div>
     </div>
     <div class="card">
-      <div class="sel"><label><input type="checkbox" class="cb" id="selAll"> Select all</label><span class="n" id="count"></span></div>
+      <div class="sel" id="selRow"><label><input type="checkbox" class="cb" id="selAll"> Select all</label><span class="n" id="count"></span></div>
       <div class="list" id="list"></div>
-      <div class="foot"><button class="btn ghost sm" id="clearAll">Remove imported chats</button></div>
+      <div class="foot" id="footRow"><button class="btn ghost sm" id="clearAll">Remove imported chats</button></div>
     </div>
   </section>
 
-  <section>
+  <section id="secTransfer">
     <div class="sh"><span class="k">03</span><h2>Transfer</h2></div>
-    <p class="lead">Where are these chats going?</p>
-    <div class="dest" role="group" data-i="0">
+    <p class="lead" id="whereLead">Where are these chats going?</p>
+    <div class="dest" role="group" data-i="0" id="dest">
       <span class="ind"></span>
       <button data-dest="claude" aria-pressed="true">Claude</button>
       <button data-dest="chatgpt" aria-pressed="false">ChatGPT</button>
@@ -505,7 +510,10 @@ function snippet(c,q){
   return(c.messages.find(m=>m.role==='user')||c.messages[0]).text.replace(/\s+/g,' ');
 }
 function render(){
-  const q=S.q.trim().toLowerCase(),vis=visible();
+  const q=S.q.trim().toLowerCase(),vis=visible(),empty=!S.all.length;
+  ['bar','selRow','footRow','readHint'].forEach(id=>document.getElementById(id).hidden=empty);
+  document.getElementById('secChoose').classList.toggle('is-quiet',empty);
+  listEl.parentElement.classList.toggle('is-empty',empty);
   countEl.textContent=S.checked.size+' / '+S.all.length+' selected';
   document.getElementById('selAll').checked=vis.length>0&&vis.every(c=>S.checked.has(c.id));
   listEl.innerHTML=vis.length?vis.map(c=>`
@@ -578,6 +586,9 @@ function build(){
   $('pNone').hidden=n>0;
   const choose=n>=2;
   $('howLead').hidden=!choose;$('methods').hidden=!choose;
+  $('whereLead').hidden=!n;$('dest').hidden=!n;
+  $('secTransfer').classList.toggle('is-quiet',!n);
+  $('pNone').textContent=S.all.length?'Tick at least one chat above.':'Import your chats first.';
   if(!n)return;
   const m=choose?S.method:'bundle';
   if(m==='each'){
