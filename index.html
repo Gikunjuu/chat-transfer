@@ -77,7 +77,7 @@ section{margin-bottom:36px}
 .lead{margin:0 0 10px;color:var(--text-2);font-size:13.5px}
 
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh-card)}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:32px;padding:0 13px;border-radius:7px;border:1px solid var(--line-2);background:var(--surface-2);font-weight:500;font-size:13px;color:var(--text);box-shadow:var(--sh-btn);transition:background .15s var(--ease),border-color .15s var(--ease),transform .15s var(--ease),box-shadow .15s var(--ease),opacity .15s var(--ease)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:32px;white-space:nowrap;flex:none;padding:0 13px;border-radius:7px;border:1px solid var(--line-2);background:var(--surface-2);font-weight:500;font-size:13px;color:var(--text);box-shadow:var(--sh-btn);transition:background .15s var(--ease),border-color .15s var(--ease),transform .15s var(--ease),box-shadow .15s var(--ease),opacity .15s var(--ease)}
 .btn:hover{background:var(--raised);border-color:var(--line-3)}
 .btn:active{transform:scale(.97)}
 .btn.primary:active{filter:brightness(.94)}
@@ -152,7 +152,9 @@ section{margin-bottom:36px}
 section.is-quiet .sh h2,section.is-quiet .sh .k{color:var(--text-3)}
 section.is-quiet .sh h2{transition:color .25s var(--ease)}
 .sh h2{transition:color .25s var(--ease)}
-.foot{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 8px 8px 13px;border-top:1px solid var(--line)}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 8px 8px 13px;border-top:1px solid var(--line);flex-wrap:wrap}
+.foot .keep{flex:1 1 200px;min-width:0}
+@media (max-width:480px){.foot{padding:10px 13px}.foot .btn{width:100%}}
 .foot .keep{font-size:12.5px;color:var(--text-3)}
 .foot .keep b{color:var(--text-2);font-weight:400}
 
@@ -665,7 +667,7 @@ function condensed(c,max){
 }
 const $=id=>document.getElementById(id);
 const safeName=t=>(t||'untitled').replace(/[\/\\:*?"<>|\u0000-\u001f]/g,'-').replace(/\s+/g,' ').trim().slice(0,80)||'untitled';
-const ymd=ts=>{const d=ts?new Date(ts):new Date();return isNaN(d)?'undated':d.toISOString().slice(0,10);};
+const ymd=ts=>{const d=ts?new Date(ts):new Date();if(isNaN(d))return'undated';const p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());};
 function fileFor(c){
   const fm=(o)=>'---\n'+Object.entries(o).map(([k,v])=>k+': '+String(v).replace(/\n/g,' ')).join('\n')+'\n---\n\n';
   return fm({title:c.title,source:label(c.source),created:ymd(c.created),updated:ymd(c.updated),messages:c.messages.length})+md(c,Infinity);
@@ -695,13 +697,15 @@ function folderPlan(targets){
     (mems.length?'- memory/: what Claude had learned about you, plus any notes\n':'')+
     '- index.json: a machine-readable list of everything here\n\nEvery file is plain text. Nothing here needs this tool to open.\n';
   let bytes=0;for(const k in files)bytes+=files[k].length;
-  // tree preview
-  const paths=Object.keys(files).sort();const lines=[];let last=null,shown=0;
-  for(const p of paths){const seg=p.split('/');const dir=seg.length>1?seg[0]+'/':'';
-    if(dir&&dir!==last){lines.push('<i>'+esc(dir)+'</i>');last=dir;}
-    if(dir&&shown>=6&&seg[0]===last.slice(0,-1)){continue;}
-    lines.push((dir?'  ':'')+esc(seg.slice(dir?1:0).join('/')));if(dir)shown++;else shown=0;
-    if(dir&&shown===6){const rest=paths.filter(x=>x.startsWith(dir)).length-6;if(rest>0)lines.push('  <i>… '+rest+' more</i>');}
+  // tree preview: root files first, then each folder with up to 6 entries
+  const paths=Object.keys(files);const lines=[];
+  paths.filter(p=>!p.includes('/')).sort().forEach(p=>lines.push(esc(p)));
+  const dirs=[...new Set(paths.filter(p=>p.includes('/')).map(p=>p.split('/')[0]))].sort();
+  for(const d of dirs){
+    const inDir=paths.filter(p=>p.startsWith(d+'/')).sort();
+    lines.push('<i>'+esc(d)+'/</i>');
+    inDir.slice(0,6).forEach(p=>lines.push('  '+esc(p.slice(d.length+1))));
+    if(inDir.length>6)lines.push('  <i>… '+(inDir.length-6)+' more</i>');
   }
   return{files,count:paths.length,bytes,tree:lines.join('\n')};
 }
@@ -745,7 +749,7 @@ function build(){
   const choose=n>=2;
   $('howLead').hidden=!choose;$('methods').hidden=!choose;
   $('whereLead').hidden=!n;$('dest').hidden=!n;
-  const nPj=targets.filter(isProj).length,nMm=targets.filter(isMem).length,noun=nMm===n?'memory':nPj===n?'Project':'chat';
+  const nPj=targets.filter(isProj).length,nMm=targets.filter(isMem).length,noun=nMm===n?'memory':nPj===n?'Project':(nPj||nMm)?'item':'chat';
   $('whereLead').textContent=n===1?'Where is this '+noun+' going?':'Where are these '+n+' '+(noun==='memory'?'item':noun)+'s going?';
   $('secTransfer').classList.toggle('is-quiet',!n);
   $('pNone').textContent=S.all.length?'Tick at least one chat above.':'Import your chats first.';
