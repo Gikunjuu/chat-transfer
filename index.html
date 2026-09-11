@@ -149,7 +149,9 @@ section{margin-bottom:36px}
 section.is-quiet .sh h2,section.is-quiet .sh .k{color:var(--text-3)}
 section.is-quiet .sh h2{transition:color .25s var(--ease)}
 .sh h2{transition:color .25s var(--ease)}
-.foot{display:flex;justify-content:flex-end;padding:6px 8px;border-top:1px solid var(--line)}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 8px 8px 13px;border-top:1px solid var(--line)}
+.foot .keep{font-size:12.5px;color:var(--text-3)}
+.foot .keep b{color:var(--text-2);font-weight:400}
 
 /* transfer */
 .dest{position:relative;display:grid;grid-template-columns:1fr 1fr;padding:3px;margin-bottom:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg-2);box-shadow:inset 0 1px 2px rgba(0,0,0,.6),inset 0 0 0 1px rgba(0,0,0,.2)}
@@ -262,7 +264,7 @@ footer{margin-top:32px;font-size:12px;color:var(--text-3);display:flex;gap:16px}
     <div class="card">
       <div class="sel" id="selRow"><label><input type="checkbox" class="cb" id="selAll"> Select all</label><span class="n" id="count"></span></div>
       <div class="list" id="list"></div>
-      <div class="foot" id="footRow"><button class="btn ghost sm" id="clearAll">Remove imported chats</button></div>
+      <div class="foot" id="footRow"><span class="keep" id="keepNote"></span><button class="btn sm" id="clearAll">Clear chats from this browser</button></div>
     </div>
   </section>
 
@@ -344,7 +346,7 @@ footer{margin-top:32px;font-size:12px;color:var(--text-3);display:flex;gap:16px}
     </div>
   </section>
 
-  <footer><span>Nothing leaves this browser.</span><span>Clear your browser data to remove everything.</span></footer>
+  <footer><span>Nothing leaves this browser.</span><span>Imported chats stay on this device until you <button class="lnk" id="clearAll2">clear them</button>.</span></footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -514,6 +516,7 @@ function render(){
   ['bar','selRow','footRow','readHint'].forEach(id=>document.getElementById(id).hidden=empty);
   document.getElementById('secChoose').classList.toggle('is-quiet',empty);
   listEl.parentElement.classList.toggle('is-empty',empty);
+  document.getElementById('keepNote').innerHTML=S.examples?'Examples only. Nothing has been saved.':'<b>'+S.all.length+' item'+(S.all.length===1?'':'s')+'</b> saved in this browser until you clear them.';
   countEl.textContent=S.checked.size+' / '+S.all.length+' selected';
   document.getElementById('selAll').checked=vis.length>0&&vis.every(c=>S.checked.has(c.id));
   listEl.innerHTML=vis.length?vis.map(c=>`
@@ -686,7 +689,8 @@ async function showExamples(){S.examples=true;await load();document.getElementBy
 document.getElementById('loadEx').onclick=showExamples;
 document.getElementById('hideEx').onclick=async()=>{S.examples=false;await load();};
 listEl.addEventListener('click',e=>{if(e.target.closest('[data-ex]'))showExamples();});
-document.getElementById('clearAll').onclick=async()=>{if(S.examples){S.examples=false;await load();return;}if(!S.all.length){toast('Nothing imported yet');return;}if(!confirm('Remove all imported chats from this browser? Your export file is not affected.'))return;await dbClear();S.open=null;await load();toast('Removed');};
+const clearAll=async()=>{if(S.examples){S.examples=false;await load();return;}if(!S.all.length){toast('Nothing imported yet');return;}if(!confirm('Clear all imported chats from this browser? Your export files are not affected.'))return;await dbClear();DONE.clear();saveDone();S.open=null;S.checked.clear();await load();toast('Cleared. Nothing is stored in this browser now.');};
+document.getElementById('clearAll').onclick=clearAll;document.getElementById('clearAll2').onclick=clearAll;
 const drop=document.getElementById('drop'),fi=document.getElementById('file');
 document.getElementById('pick').onclick=()=>fi.click();
 fi.onchange=()=>{if(fi.files.length)handleFiles(fi.files);fi.value='';};
