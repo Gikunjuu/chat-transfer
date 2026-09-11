@@ -463,7 +463,7 @@ async function handleFiles(files){
   const total=chats+projects;
   if(total){
     log('Imported '+total+' item'+(total===1?'':'s')+'.'+(projects&&!chats?' These are Projects. Your chats are in the conversations-000.zip from the same email; drop that here too.':''));
-    await load();toast('Imported '+total+' item'+(total===1?'':'s'));
+    await load();toast('Imported '+total+' item'+(total===1?'':'s')+'. Tick the ones to move.');
   }else if(!unknown)log('Nothing imported.');
   else log('Nothing imported. This does not look like a ChatGPT or Claude export.');
 }
@@ -496,7 +496,7 @@ async function load(){
   if(items.length)S.examples=false;
   if(S.examples)items=EX;
   S.all=items.sort((a,b)=>(b.updated||0)-(a.updated||0));
-  S.checked=new Set(S.all.map(c=>c.id));
+  S.checked=new Set();
   document.getElementById('exampleNote').hidden=!S.examples;
   render();
 }
@@ -587,6 +587,8 @@ function build(){
   const choose=n>=2;
   $('howLead').hidden=!choose;$('methods').hidden=!choose;
   $('whereLead').hidden=!n;$('dest').hidden=!n;
+  const nPj=targets.filter(isProj).length,noun=nPj===n?'Project':'chat';
+  $('whereLead').textContent=n===1?'Where is this '+noun+' going?':'Where are these '+n+' '+noun+'s going?';
   $('secTransfer').classList.toggle('is-quiet',!n);
   $('pNone').textContent=S.all.length?'Tick at least one chat above.':'Import your chats first.';
   if(!n)return;
