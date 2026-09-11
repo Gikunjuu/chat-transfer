@@ -181,6 +181,9 @@ section.is-quiet .sh h2{transition:color .25s var(--ease)}
 .method .rec{grid-column:3;grid-row:1/3;align-self:center;font-size:11px;font-weight:500;color:var(--text-2);border:1px solid var(--line-2);border-radius:999px;padding:2px 8px;opacity:0;transform:scale(.9);white-space:nowrap;transition:opacity .2s var(--ease),transform .25s var(--ease-out)}
 .method.is-rec .rec{opacity:1;transform:none}
 .tbox{padding:14px}
+.tree{margin:0;max-height:260px;overflow:auto;font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--text-2);padding:11px 13px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2);box-shadow:inset 0 1px 3px rgba(0,0,0,.5);white-space:pre}
+.tree i{font-style:normal;color:var(--text-3)}
+.where.mem{padding:9px 12px;border:1px solid var(--line-2);border-radius:8px;background:var(--surface-2)}
 .tbox > [hidden]{display:none}
 @keyframes panelIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .tbox > div:not([hidden]){animation:panelIn .28s var(--ease-out) both}
@@ -232,7 +235,7 @@ footer{margin-top:32px;font-size:12px;flex-wrap:wrap;color:var(--text-3);display
     <div class="help-wrap" id="helpWrap"><div><div class="help" id="help">
       <div class="hcol"><div class="t">1 · Get your export</div>
         <p><b>ChatGPT</b> Settings → Data controls → Export data. A .zip arrives by email.</p>
-        <p><b>Claude</b> Settings → Privacy → Export data. Several .zip files arrive by email: chats, Projects, profile.</p>
+        <p><b>Claude</b> Settings → Privacy → Export data. Several .zip files arrive by email: chats, Projects, memory, profile. Drop them all.</p>
       </div>
       <div class="hcol"><div class="t">2 · Drop it here</div>
         <p>Drop every .zip you received. The tool reads them in your browser and lists your chats and Projects. Nothing is uploaded.</p>
@@ -306,6 +309,12 @@ footer{margin-top:32px;font-size:12px;flex-wrap:wrap;color:var(--text-3);display
         <span class="md" id="mFileD">One .md file to add to a Claude Project. Every chat in that Project can draw on it. Best for large archives.</span>
         <span class="rec">Recommended</span>
       </button>
+      <button class="method" role="radio" data-m="folder" aria-checked="false">
+        <span class="dot"></span>
+        <span class="mt">Folder of files</span>
+        <span class="md">A zip with one file per chat, plus Projects and memory as their own files. Opens in Notes, Obsidian, anything. Best for keeping.</span>
+        <span class="rec">Recommended</span>
+      </button>
     </div>
 
     <div class="card tbox" id="panel">
@@ -352,6 +361,16 @@ footer{margin-top:32px;font-size:12px;flex-wrap:wrap;color:var(--text-3);display
           <span class="hint" id="hintFile"></span>
         </div>
       </div>
+      <!-- folder -->
+      <div id="pFolder" hidden>
+        <p class="where" id="whereFolder"></p>
+        <pre class="tree" id="tree"></pre>
+        <div class="stats" id="statsFolder"></div>
+        <div class="next">
+          <button class="btn primary" id="dlFolder">Download folder (.zip)</button>
+          <span class="hint" id="hintFolder"></span>
+        </div>
+      </div>
       <div class="empty" id="pNone">Select at least one item above.</div>
     </div>
   </section>
@@ -394,6 +413,9 @@ const PARSERS={
   claude:{label:'Claude',updated:'September 2026',
     looksLike:o=>!!o&&typeof o==='object'&&!('prompt_template' in o)&&!Array.isArray(o.docs)&&('chat_messages' in o||('uuid' in o&&'name' in o&&'created_at' in o)),
     complete:o=>Array.isArray(o.chat_messages)&&(o.chat_messages.length===0||o.chat_messages.some(m=>m&&'sender' in m&&('text' in m||Array.isArray(m.content))))},
+  memory:{label:'Claude memory',updated:'September 2026',
+    looksLike:o=>!!o&&typeof o==='object'&&('conversations_memory' in o||'memory_files' in o||'project_memories' in o),
+    complete:o=>typeof o.conversations_memory==='string'||Array.isArray(o.memory_files)},
   project:{label:'Claude Project',updated:'September 2026',
     looksLike:o=>!!o&&typeof o==='object'&&('prompt_template' in o||Array.isArray(o.docs)),
     complete:o=>'prompt_template' in o&&Array.isArray(o.docs)&&'name' in o},
@@ -403,7 +425,7 @@ function detect(data){
   if(!arr||!arr.length)return{kind:null,arr:[],drift:false};
   const sample=arr.filter(x=>x&&typeof x==='object').slice(0,25);
   if(!sample.length)return{kind:null,arr:[],drift:false};
-  for(const kind of ['project','chatgpt','claude']){
+  for(const kind of ['memory','project','chatgpt','claude']){
     const p=PARSERS[kind];
     const hits=sample.filter(p.looksLike).length;
     if(hits<Math.ceil(sample.length/2))continue;
@@ -411,6 +433,22 @@ function detect(data){
     return{kind,arr,drift:ok<Math.ceil(hits/2)};
   }
   return{kind:null,arr,drift:false};
+}
+function parseMemory(arr){
+  const out=[];
+  for(const m of arr){
+    if(!m||typeof m!=='object')continue;
+    const text=(m.conversations_memory||'').trim();
+    const files=(m.memory_files||[]).filter(f=>f&&(f.content||'').trim()).map(f=>({path:f.path||'note.md',content:f.content.trim(),updated:f.updated_at||null}));
+    const pm=m.project_memories&&typeof m.project_memories==='object'?m.project_memories:{};
+    if(!text&&!files.length&&!Object.keys(pm).length)continue;
+    const messages=[];
+    if(text)messages.push({role:'user',text,label:'Memory'});
+    for(const f of files)messages.push({role:'tool',text:f.content,label:f.path.split('/').pop()});
+    const updated=files.reduce((t,f)=>Math.max(t,Date.parse(f.updated)||0),0)||Date.now();
+    out.push({id:'memory:'+(m.account_uuid||'account'),source:'claude',kind:'memory',title:'What Claude knows about you',memoryText:text,memoryFiles:files,projectMemories:pm,created:updated,updated,messages});
+  }
+  return out;
 }
 function parseProjects(arr){
   const out=[];
@@ -476,7 +514,7 @@ async function handleFiles(files){
   logEl.textContent='';
   const list=Array.from(files||[]);
   if(!list.length){log('No file received. Try the Choose file button.');return;}
-  let chats=0,projects=0,unknown=0;
+  let chats=0,projects=0,memory=0,unknown=0;
   for(const file of list){
     log('Reading '+file.name+'…');
     const texts=[];
@@ -484,14 +522,14 @@ async function handleFiles(files){
       if(/\.zip$/i.test(file.name)||file.type==='application/zip'){
         if(typeof JSZip==='undefined'){log('The unzip library did not load. Check your connection, reload the page, or unzip the file and drop the .json files instead.');continue;}
         const zip=await JSZip.loadAsync(file);
-        const names=Object.keys(zip.files).filter(n=>/\.json$/i.test(n)&&!zip.files[n].dir&&!/(^|\/)(users|memories|memory)\.json$/i.test(n));
+        const names=Object.keys(zip.files).filter(n=>/\.json$/i.test(n)&&!zip.files[n].dir&&!/(^|\/)(users|login_history)\.json$/i.test(n));
         if(!names.length){log('  No .json files inside '+file.name+'.');continue;}
         for(const n of names)texts.push({name:n,text:await zip.files[n].async('string')});
       }else if(/\.json$/i.test(file.name)||file.type==='application/json'){
         texts.push({name:file.name,text:await file.text()});
       }else{log('  '+file.name+' is not a .zip or .json file.');continue;}
     }catch(e){log('  Could not read '+file.name+': '+e.message);continue;}
-    let fileChats=0,fileProjects=0,expected={chatgpt:0,claude:0,project:0},drifted=new Set();
+    let fileChats=0,fileProjects=0,fileMemory=0,memNotes=0,memProj=0,expected={chatgpt:0,claude:0,project:0,memory:0},drifted=new Set();
     for(const t of texts){
       let data;try{data=JSON.parse(t.text);}catch{unknown++;continue;}
       const{kind,arr,drift}=detect(data);
@@ -499,12 +537,13 @@ async function handleFiles(files){
       if(drift)drifted.add(kind);
       expected[kind]+=arr.length;
       let parsed=[];
-      try{parsed=kind==='chatgpt'?parseChatGPT(arr):kind==='claude'?parseClaude(arr):parseProjects(arr);}catch(e){drifted.add(kind);}
+      try{parsed=kind==='chatgpt'?parseChatGPT(arr):kind==='claude'?parseClaude(arr):kind==='memory'?parseMemory(arr):parseProjects(arr);}catch(e){drifted.add(kind);}
       if(parsed.length)await dbPut(parsed);
-      if(kind==='project')fileProjects+=parsed.length;else fileChats+=parsed.length;
+      if(kind==='project')fileProjects+=parsed.length;else if(kind==='memory'){fileMemory+=parsed.length;for(const p of parsed){memNotes+=p.memoryFiles.length;memProj+=Object.keys(p.projectMemories).length;}}else fileChats+=parsed.length;
     }
-    chats+=fileChats;projects+=fileProjects;
+    chats+=fileChats;projects+=fileProjects;memory+=fileMemory;
     const exChats=expected.chatgpt+expected.claude,exProj=expected.project;
+    if(fileMemory)log('  Memory found: what Claude knows about you'+(memProj?', '+memProj+' project memor'+(memProj===1?'y':'ies'):'')+(memNotes?', '+memNotes+' note'+(memNotes===1?'':'s'):'')+'.');
     if(fileChats||fileProjects){
       const parts=[];
       if(exChats)parts.push(fileChats+' of '+exChats+' chat'+(exChats===1?'':'s'));
@@ -512,15 +551,15 @@ async function handleFiles(files){
       log('  '+parts.join(', ')+' imported.'+((exChats&&fileChats<exChats)||(exProj&&fileProjects<exProj)?' The rest were empty.':''));
     }else if(exChats||exProj){
       log('  Found '+(exChats||exProj)+' '+(exChats?'chats':'projects')+' but imported none.');
-    }else log('  Nothing recognisable in '+file.name+'. '+(/project/i.test(file.name)?'':'ChatGPT and Claude exports come as a .zip; Claude may send several (conversations-000.zip holds the chats, projects-000.zip holds Projects).'));
+    }else if(!fileMemory)log('  Nothing recognisable in '+file.name+'. '+(/project/i.test(file.name)?'':'ChatGPT and Claude exports come as a .zip; Claude may send several (conversations-000.zip holds the chats, projects-000.zip holds Projects).'));
     for(const k of drifted){
       const p=PARSERS[k];
       logHTML('  <b>This looks like a '+p.label+' export in a newer format than this tool knows</b> (its '+p.label+' parser was last updated '+p.updated+'). Some or all of it may not have come through. <a href="https://github.com/Gikunjuu/chat-transfer/issues/new?title='+encodeURIComponent(p.label+' export format changed')+'" target="_blank" rel="noopener">Report it</a> so the parser can be updated.');
     }
   }
-  const total=chats+projects;
+  const total=chats+projects+memory;
   if(total){
-    log('Imported '+total+' item'+(total===1?'':'s')+'.'+(projects&&!chats?' These are Projects. Your chats are in the conversations-000.zip from the same email; drop that here too.':''));
+    log('Imported '+total+' item'+(total===1?'':'s')+'.'+((projects||memory)&&!chats?' Your chats are in the conversations-000.zip from the same email; drop that here too.':''));
     await load();toast('Imported '+total+' item'+(total===1?'':'s')+'. Tick the ones to move.');
   }else if(!unknown)log('Nothing imported.');
   else log('Nothing imported. This does not look like a ChatGPT or Claude export.');
@@ -553,7 +592,9 @@ async function load(){
   let items=await dbAll();
   if(items.length)S.examples=false;
   if(S.examples)items=EX;
-  S.all=items.sort((a,b)=>(b.updated||0)-(a.updated||0));
+  const pm={};items.filter(c=>c.kind==='memory').forEach(m=>Object.assign(pm,m.projectMemories||{}));
+  items.forEach(c=>{if(c.kind==='project'){const id=c.id.replace(/^project:/,'');c.memory=(pm[id]||'').trim()||null;}});
+  S.all=items.sort((a,b)=>(a.kind==='memory')-(b.kind==='memory')?((b.kind==='memory')-(a.kind==='memory')):(b.updated||0)-(a.updated||0));
   S.checked=new Set();
   document.getElementById('exampleNote').hidden=!S.examples;
   render();
@@ -561,9 +602,11 @@ async function load(){
 const visible=()=>{const q=S.q.trim().toLowerCase();return S.all.filter(c=>(S.filter==='all'||c.source===S.filter)&&(!q||c.title.toLowerCase().includes(q)||c.messages.some(m=>m.text.toLowerCase().includes(q))));};
 const label=s=>s==='chatgpt'?'ChatGPT':'Claude';
 const isProj=c=>c.kind==='project';
-const countLabel=c=>isProj(c)?(c.messages.filter(m=>m.role==='tool').length+' file'+(c.messages.filter(m=>m.role==='tool').length===1?'':'s')):(c.messages.length+' messages');
+const isMem=c=>c.kind==='memory';
+const countLabel=c=>isMem(c)?(Math.round((c.memoryText||'').length/1000)+'k chars'+(c.memoryFiles&&c.memoryFiles.length?' · '+c.memoryFiles.length+' notes':'')):isProj(c)?(c.messages.filter(m=>m.role==='tool').length+' file'+(c.messages.filter(m=>m.role==='tool').length===1?'':'s')):(c.messages.length+' messages');
 function snippet(c,q){
   if(q){const m=c.messages.find(m=>m.text.toLowerCase().includes(q));if(m){const i=m.text.toLowerCase().indexOf(q);return(i>40?'…':'')+m.text.slice(Math.max(0,i-40),i+90).replace(/\s+/g,' ');}}
+  if(isMem(c))return(c.memoryText||(c.memoryFiles[0]&&c.memoryFiles[0].content)||'').replace(/\s+/g,' ');
   if(isProj(c))return(c.description||(c.messages[0]&&c.messages[0].label!=='Note'?c.messages[0].text:'')||'').replace(/\s+/g,' ');
   return(c.messages.find(m=>m.role==='user')||c.messages[0]).text.replace(/\s+/g,' ');
 }
@@ -581,13 +624,14 @@ function render(){
         <input type="checkbox" class="cb" data-check="${esc(c.id)}" aria-label="Select" ${S.checked.has(c.id)?'checked':''}>
         <button class="open" data-open="${esc(c.id)}">
           <span class="t">${esc(c.title)}</span>
-          <span class="m"><span class="src">${isProj(c)?'Claude Project':label(c.source)}</span><span>${fmtDate(c.updated)}</span><span>·</span><span>${countLabel(c)}</span></span>
+          <span class="m"><span class="src">${isMem(c)?'Claude memory':isProj(c)?'Claude Project':label(c.source)}</span><span>${fmtDate(c.updated)}</span><span>·</span><span>${countLabel(c)}</span></span>
           <span class="snip">${esc(snippet(c,q))}</span>
         </button>
       </div>
       <div class="body"><div>
-        <div class="actions"><button class="btn sm" data-copyone="${esc(c.id)}">Copy this ${isProj(c)?'project':'chat'} only</button></div>
+        <div class="actions"><button class="btn sm" data-copyone="${esc(c.id)}">Copy this ${isMem(c)?'memory':isProj(c)?'project':'chat'} only</button></div>
         ${isProj(c)&&c.description?`<div class="turn"><div class="who">About</div><div class="txt">${esc(c.description)}</div></div>`:''}
+        ${isProj(c)&&c.memory?`<div class="turn"><div class="who">Learned</div><div class="txt">${esc(c.memory)}</div></div>`:''}
         ${c.messages.map(m=>`<div class="turn ${m.role}"><div class="who">${m.label?esc(m.label):m.role==='user'?'You':m.role==='assistant'?label(c.source):'Tool'}</div><div class="txt">${esc(m.text)}</div></div>`).join('')}
       </div></div>
     </div>`).join('')
@@ -598,9 +642,15 @@ function render(){
 
 /* transfer text */
 function md(c,max){
+  if(isMem(c)){
+    let s='## What Claude knows about me\n_Claude memory · '+fmtDate(c.updated)+'_\n\n'+(c.memoryText||'')+'\n\n';
+    if(c.memoryFiles&&c.memoryFiles.length){s+='### Notes\n\n';for(const f of c.memoryFiles)s+='**'+f.path+'**\n```\n'+f.content+'\n```\n\n';}
+    return s;
+  }
   if(isProj(c)){
     let s='## Project: '+c.title+'\n_Claude Project · '+fmtDate(c.created)+'_\n\n';
     if(c.description)s+=c.description+'\n\n';
+    if(c.memory)s+='**What Claude had learned in this Project:**\n'+c.memory+'\n\n';
     for(const m of c.messages){let t=m.text;if(t.length>max)t=t.slice(0,max).trimEnd()+' […]';s+=m.role==='user'?'**Project instructions:**\n'+t+'\n\n':'**File: '+m.label+'**\n```\n'+t+'\n```\n\n';}
     return s;
   }
@@ -614,9 +664,56 @@ function condensed(c,max){
   return md({...c,messages:[...head,{role:'tool',text:'[… '+(c.messages.length-8)+' earlier messages omitted …]'},...tail]},max);
 }
 const $=id=>document.getElementById(id);
+const safeName=t=>(t||'untitled').replace(/[\/\\:*?"<>|\u0000-\u001f]/g,'-').replace(/\s+/g,' ').trim().slice(0,80)||'untitled';
+const ymd=ts=>{const d=ts?new Date(ts):new Date();return isNaN(d)?'undated':d.toISOString().slice(0,10);};
+function fileFor(c){
+  const fm=(o)=>'---\n'+Object.entries(o).map(([k,v])=>k+': '+String(v).replace(/\n/g,' ')).join('\n')+'\n---\n\n';
+  return fm({title:c.title,source:label(c.source),created:ymd(c.created),updated:ymd(c.updated),messages:c.messages.length})+md(c,Infinity);
+}
+function folderPlan(targets){
+  const files={};const used=new Set();
+  const uniq=p=>{let q=p,i=2;while(used.has(q.toLowerCase())){q=p.replace(/(\.md)?$/,' ('+i+++')$1');}used.add(q.toLowerCase());return q;};
+  const chats=targets.filter(c=>!isProj(c)&&!isMem(c)),projs=targets.filter(isProj),mems=targets.filter(isMem);
+  for(const c of chats)files[uniq('chats/'+ymd(c.created)+' '+safeName(c.title)+'.md')]=fileFor(c);
+  for(const p of projs){
+    const base=uniq('projects/'+safeName(p.title))+'/';
+    const instr=p.messages.find(m=>m.role==='user');
+    files[base+'README.md']='# '+p.title+'\n\n'+(p.description||'')+'\n\nInstructions are in instructions.md; knowledge files are under files/.'+(p.memory?' What Claude had learned inside this Project is in memory.md.':'')+'\n';
+    files[base+'instructions.md']=instr?instr.text+'\n':'(no instructions)\n';
+    if(p.memory)files[base+'memory.md']=p.memory+'\n';
+    p.messages.filter(m=>m.role==='tool'&&m.label&&m.label!=='Note').forEach(m=>{files[base+'files/'+safeName(m.label)]=m.text+'\n';});
+  }
+  for(const mm of mems){
+    if(mm.memoryText)files['memory/what-claude-knows-about-you.md']=mm.memoryText+'\n';
+    (mm.memoryFiles||[]).forEach(f=>{files['memory/notes/'+f.path.split('/').filter(Boolean).map(safeName).join('/')]=f.content+'\n';});
+  }
+  const index=targets.map(c=>({id:c.id,kind:c.kind||'chat',title:c.title,source:c.source,created:ymd(c.created),updated:ymd(c.updated),messages:c.messages.length}));
+  files['index.json']=JSON.stringify(index,null,2)+'\n';
+  files['README.md']='# Chat Transfer export\n\nExported '+new Date().toISOString().slice(0,10)+' from chat-migration.netlify.app.\n\n'+
+    (chats.length?'- chats/: '+chats.length+' conversation'+(chats.length===1?'':'s')+', one Markdown file each, named by date and title\n':'')+
+    (projs.length?'- projects/: '+projs.length+' Claude Project'+(projs.length===1?'':'s')+' with instructions, knowledge files and memory\n':'')+
+    (mems.length?'- memory/: what Claude had learned about you, plus any notes\n':'')+
+    '- index.json: a machine-readable list of everything here\n\nEvery file is plain text. Nothing here needs this tool to open.\n';
+  let bytes=0;for(const k in files)bytes+=files[k].length;
+  // tree preview
+  const paths=Object.keys(files).sort();const lines=[];let last=null,shown=0;
+  for(const p of paths){const seg=p.split('/');const dir=seg.length>1?seg[0]+'/':'';
+    if(dir&&dir!==last){lines.push('<i>'+esc(dir)+'</i>');last=dir;}
+    if(dir&&shown>=6&&seg[0]===last.slice(0,-1)){continue;}
+    lines.push((dir?'  ':'')+esc(seg.slice(dir?1:0).join('/')));if(dir)shown++;else shown=0;
+    if(dir&&shown===6){const rest=paths.filter(x=>x.startsWith(dir)).length-6;if(rest>0)lines.push('  <i>… '+rest+' more</i>');}
+  }
+  return{files,count:paths.length,bytes,tree:lines.join('\n')};
+}
+async function saveBlob(filename,blob,okMsg){
+  if(dlCap){try{await dlCap.save({filename,data:blob});toast(okMsg);}catch(e){if(e&&e.code==='declined')return;toast('Could not save the file here.');}return;}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast(okMsg);
+}
 function preamble(targets,d,forFile){
-  const nP=targets.filter(isProj).length,nC=targets.length-nP;
+  const nP=targets.filter(isProj).length,nM=targets.filter(isMem).length,nC=targets.length-nP-nM;
   let s=forFile?'# Archive of my earlier conversations\n\n':'# Context from my earlier work\n\n';
+  if(nM&&!forFile)s+='First, what my previous assistant had learned about me over time. Treat it as background about who I am and how I like to work.\n\n';
   if(forFile)s+='This file holds '+(nC?nC+' conversation'+(nC===1?'':'s'):'')+(nC&&nP?' and ':'')+(nP?nP+' Project'+(nP===1?'':'s'):'')+' exported from a previous AI assistant account. Each section is one conversation, with a title and date. Draw on them whenever they are relevant to what I ask.\n\n';
   else{
     if(nC)s+='Below '+(nC===1?'is a transcript of an earlier conversation':'are transcripts of '+nC+' earlier conversations')+' I had with an AI assistant. Read them as background, then help me continue from where they left off.\n\n';
@@ -625,12 +722,14 @@ function preamble(targets,d,forFile){
   return s+'---\n\n';
 }
 function singleText(c,d){
+  if(isMem(c))return (c.memoryText||'')||md(c,Infinity);
   const who=isProj(c)?'Project':'conversation';
   return '# Continue an earlier '+who+'\n\n'+(isProj(c)
     ?(d==='claude'?'This is a Project from my previous account. Help me recreate it: I will make a Project with the same name, paste the instructions into its custom instructions, and add each file to its knowledge.':'Treat these instructions and files as standing context for our conversation.')
     :'This is a transcript of an earlier conversation I had with an AI assistant. Read it, then help me pick up exactly where it left off.')+'\n\n---\n\n'+md(c,Infinity);
 }
-function recommend(n,d){ if(n<=1)return'bundle'; if(n<=15)return'bundle'; return d==='claude'?'file':'each'; }
+function recommend(n,d){ if(n<=15)return'bundle'; if(n>50)return'folder'; return d==='claude'?'file':'each'; }
+const memWhere=d=>d==='claude'?'Settings → Profile → <b>What should Claude know about you</b>':'Settings → Personalization → <b>Custom instructions</b>';
 function setMethod(m){S.method=m;document.querySelectorAll('.method').forEach(b=>b.setAttribute('aria-checked',String(b.dataset.m===m)));build();}
 function build(){
   const targets=S.all.filter(c=>S.checked.has(c.id));
@@ -641,13 +740,13 @@ function build(){
   $('mEachN').textContent=n>1?n+' steps.':'';
   $('mFileT').textContent=d==='claude'?'Project file':'Attach as a file';
   $('mFileD').textContent=d==='claude'?'One .md file to add to a Claude Project. Every chat in that Project can draw on it. Best for large archives.':'One .md file to attach to a new ChatGPT chat or a ChatGPT Project. Best for large archives.';
-  ['pEach','pBundle','pFile'].forEach(id=>$(id).hidden=true);
+  ['pEach','pBundle','pFile','pFolder'].forEach(id=>$(id).hidden=true);
   $('pNone').hidden=n>0;
   const choose=n>=2;
   $('howLead').hidden=!choose;$('methods').hidden=!choose;
   $('whereLead').hidden=!n;$('dest').hidden=!n;
-  const nPj=targets.filter(isProj).length,noun=nPj===n?'Project':'chat';
-  $('whereLead').textContent=n===1?'Where is this '+noun+' going?':'Where are these '+n+' '+noun+'s going?';
+  const nPj=targets.filter(isProj).length,nMm=targets.filter(isMem).length,noun=nMm===n?'memory':nPj===n?'Project':'chat';
+  $('whereLead').textContent=n===1?'Where is this '+noun+' going?':'Where are these '+n+' '+(noun==='memory'?'item':noun)+'s going?';
   $('secTransfer').classList.toggle('is-quiet',!n);
   $('pNone').textContent=S.all.length?'Tick at least one chat above.':'Import your chats first.';
   if(!n)return;
@@ -662,8 +761,9 @@ function build(){
     $('stepTitle').innerHTML=esc(c.title)+(doneHere?'<span class="done">Copied</span>':'');
     $('outEach').value=singleText(c,d);
     $('prevStep').disabled=S.step===0;$('nextStep').disabled=S.step===n-1;
-    $('copyEach').textContent=doneHere?'Copy again':'Copy this chat';
-    $('hintEach').textContent=doneCount===n?'All '+n+' copied. Each one goes into its own new '+name+' chat.':'Copy, open a new '+name+' chat, paste. Then come back and press Next.';
+    $('copyEach').textContent=doneHere?'Copy again':isMem(c)?'Copy memory':'Copy this chat';
+    if(isMem(c))$('hintEach').innerHTML='This one does not go into a chat. Paste it into '+memWhere(d)+' in the new account.';
+    else $('hintEach').textContent=doneCount===n?'All '+n+' copied. Each one goes into its own new '+name+' chat.':'Copy, open a new '+name+' chat, paste. Then come back and press Next.';
     return;
   }
   if(m==='file'){
@@ -677,13 +777,26 @@ function build(){
     $('hintFile').textContent=text.length>30*1024*1024?'Over 30 MB. Split your selection into a few files.':'';
     return;
   }
+  if(m==='folder'){
+    $('pFolder').hidden=false;
+    const plan=folderPlan(targets);
+    $('tree').innerHTML=plan.tree;
+    $('whereFolder').innerHTML='<b>Download</b> the zip and unzip it. One Markdown file per chat, named by date and title, so it opens in Notes, Obsidian, Word, or a Claude Project. Plain text you will still be able to read in ten years.';
+    $('statsFolder').innerHTML='<span>'+plan.count+' file'+(plan.count===1?'':'s')+'</span><span>'+(plan.bytes/1024).toFixed(0)+' KB</span>';
+    $('hintFolder').textContent='';
+    return;
+  }
   // bundle
   $('pBundle').hidden=false;
   const mode=document.querySelector('input[name=mode]:checked').value;
-  $('whereBundle').innerHTML=n===1
+  $('whereBundle').classList.toggle('mem',n===1&&isMem(targets[0]));
+  $('whereBundle').innerHTML=n===1&&isMem(targets[0])
+    ?'<b>This goes into Settings, not a chat.</b> Copy, open the new account, go to '+memWhere(d)+', and paste. From then on it starts every chat already knowing this.'
+    :n===1
     ?'<b>Copy</b> the text, open '+name+' in the account you are moving to, start a new chat and <b>paste</b>. It picks up where this one left off.'
     :d==='claude'?'<b>Copy</b> the text, open Claude in the account you are moving to, start a new chat and <b>paste</b>. That one chat will remember all of these.'
     :'<b>Copy</b> the text, open ChatGPT, start a new chat and <b>paste</b>. That one chat will remember all of these.';
+  if(n>1&&nMm)$('whereBundle').innerHTML+=' Your memory is included as background. It works better pasted into '+memWhere(d)+' on its own, so consider moving it separately.';
   $('copy').textContent='Copy for '+name;
   let s=n===1?'':preamble(targets,d,false);
   const full=n===1?singleText(targets[0],d):s+targets.map(c=>md(c,Infinity)).join('---\n\n');
@@ -724,6 +837,15 @@ document.querySelectorAll('.method').forEach(b=>b.onclick=()=>setMethod(b.datase
 $('copyEach').onclick=async()=>{const t=S.all.filter(c=>S.checked.has(c.id))[S.step];await copyText($('outEach').value,'Copied. Paste it into a new chat, then press Next.');DONE.add(t.id);saveDone();build();};
 $('prevStep').onclick=()=>{S.step--;build();};
 $('nextStep').onclick=()=>{S.step++;build();};
+$('dlFolder').onclick=async()=>{
+  if(typeof JSZip==='undefined'){toast('The zip library did not load. Reload and try again.');return;}
+  const targets=S.all.filter(c=>S.checked.has(c.id));
+  const plan=folderPlan(targets);
+  const zip=new JSZip();for(const k in plan.files)zip.file('chat-transfer/'+k,plan.files[k]);
+  $('dlFolder').disabled=true;$('dlFolder').textContent='Building…';
+  try{const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE'});await saveBlob('chat-transfer.zip',blob,'Saved chat-transfer.zip');}
+  finally{$('dlFolder').disabled=false;$('dlFolder').textContent='Download folder (.zip)';}
+};
 $('copyFile').onclick=()=>copyText($('outFile').value,'Copied. Paste it into a new file named chats.md.');
 // Inside the claude.ai viewer, saves go through the downloads capability; elsewhere (Netlify, local file) a plain anchor download works.
 let dlCap=null;
