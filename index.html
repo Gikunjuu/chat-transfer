@@ -120,7 +120,19 @@ section{margin-bottom:36px}
 .example{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:8px;padding:9px 13px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-size:13px;color:var(--text-2)}
 .sel{display:flex;align-items:center;gap:10px;padding:9px 13px;font-size:12.5px;color:var(--text-2);border-bottom:1px solid var(--line)}
 .sel label{display:flex;gap:10px;align-items:center;color:var(--text);cursor:pointer}
+.sel{flex-wrap:wrap;row-gap:6px}
 .sel .n{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--text-3)}
+.quick{display:flex;gap:6px;align-items:center;color:var(--text-3)}
+.chip{height:24px;padding:0 9px;border-radius:999px;border:1px solid var(--line-2);background:transparent;font-size:12px;color:var(--text-2);transition:background .15s var(--ease),border-color .15s var(--ease),color .15s var(--ease),transform .1s var(--ease)}
+.chip:hover{background:var(--surface-2);color:var(--text);border-color:var(--line-3)}
+.chip:active{transform:scale(.96)}
+.sortw{display:flex;align-items:center}
+.sortw select{appearance:none;-webkit-appearance:none;height:34px;padding:0 26px 0 12px;border-radius:8px;box-shadow:var(--sh-btn);background-color:var(--surface)!important;border:1px solid var(--line-2);background:transparent url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" fill="none" stroke="%239BA0A8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5l3 3 3-3"/></svg>') no-repeat right 8px center/10px;color:var(--text-2);font-size:12px;cursor:pointer}
+.sortw select:hover{border-color:var(--line-3);color:var(--text)}
+.sortw select{border-color:var(--line);font-size:13px}
+.chat.is-dup .head{opacity:.72}
+.chat .m .dup{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:4px;border:1px dashed var(--line-2);color:var(--text-3);font-size:11px}
+@media (max-width:560px){.quick span{display:none}.bar{flex-wrap:wrap}.search{flex-basis:100%}}
 .cb{appearance:none;-webkit-appearance:none;width:16px;height:16px;margin:0;flex:none;border:1px solid var(--line-3);border-radius:4px;background:var(--surface-2);cursor:pointer;display:inline-grid;place-content:center;transition:background .1s,border-color .1s}
 .cb:hover{border-color:rgba(255,255,255,.35)}
 .cb:checked{background:#FFFFFF;border-color:#FFFFFF}
@@ -162,21 +174,17 @@ section.is-quiet .sh h2{transition:color .25s var(--ease)}
 .foot .keep b{color:var(--text-2);font-weight:400}
 
 /* transfer */
-.dest{position:relative;display:grid;grid-template-columns:1fr 1fr;padding:3px;margin-bottom:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg-2);box-shadow:inset 0 1px 2px rgba(0,0,0,.6),inset 0 0 0 1px rgba(0,0,0,.2);isolation:isolate}
+.dest{position:relative;display:grid;grid-template-columns:repeat(var(--n,2),1fr);padding:3px;margin-bottom:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg-2);box-shadow:inset 0 1px 2px rgba(0,0,0,.6),inset 0 0 0 1px rgba(0,0,0,.2);isolation:isolate;--w:calc((100% - 6px) / var(--n,2))}
 .dest button{position:relative;z-index:1;height:36px;border:0;border-radius:7px;background:transparent;font-size:13px;font-weight:500;color:var(--text-3);transition:color .2s var(--ease),opacity .1s var(--ease)}
 .dest button:hover{color:var(--text-2)}
 .dest button[aria-pressed="true"]{color:transparent}
 .dest button[aria-pressed="false"]:active{opacity:.6}
 /* the pill: leading edge stretches ahead, trailing edge catches up */
-.dest .ind{position:absolute;top:3px;left:3px;width:calc(50% - 3px);height:calc(100% - 6px);border-radius:7px;background:var(--btn);box-shadow:var(--sh-primary);pointer-events:none;z-index:0;transform-origin:right center;transition:transform .28s var(--ease)}
-.dest[data-i="1"] .ind{transform:translateX(100%);transform-origin:left center}
-.dest.moving[data-i="0"] .ind{transform:scaleX(1.04)}
-.dest.moving[data-i="1"] .ind{transform:translateX(100%) scaleX(1.04)}
-.dest[data-i="0"] button[aria-pressed="true"]:active ~ .ind{transform:scale(.96);transition-duration:.1s}
-.dest[data-i="1"] button[aria-pressed="true"]:active ~ .ind{transform:translateX(100%) scale(.96);transition-duration:.1s}
+.dest .ind{position:absolute;top:3px;left:3px;width:var(--w);height:calc(100% - 6px);border-radius:7px;background:var(--btn);box-shadow:var(--sh-primary);pointer-events:none;z-index:0;transform:translateX(calc(100% * var(--i,0)));transform-origin:var(--o,right center);transition:transform .28s var(--ease)}
+.dest.moving .ind{transform:translateX(calc(100% * var(--i,0))) scaleX(1.04)}
+.dest button[aria-pressed="true"]:active ~ .ind{transform:translateX(calc(100% * var(--i,0))) scale(.96);transition-duration:.1s}
 /* dark labels, clipped to the pill, so the text is dark exactly where the pill is at every frame */
-.dest .ink{position:absolute;inset:0;padding:3px;display:grid;grid-template-columns:1fr 1fr;pointer-events:none;z-index:2;clip-path:inset(3px 50% 3px 3px round 7px);transition:clip-path .28s var(--ease)}
-.dest[data-i="1"] .ink{clip-path:inset(3px 3px 3px 50% round 7px)}
+.dest .ink{position:absolute;inset:0;padding:3px;display:grid;grid-template-columns:repeat(var(--n,2),1fr);pointer-events:none;z-index:2;clip-path:inset(3px calc(3px + (100% - 6px) * (var(--n,2) - 1 - var(--i,0)) / var(--n,2)) 3px calc(3px + (100% - 6px) * var(--i,0) / var(--n,2)) round 7px);transition:clip-path .28s var(--ease)}
 .dest .ink span{display:grid;place-content:center;height:36px;font-size:13px;font-weight:500;color:var(--btn-text)}
 .methods[hidden],.lead[hidden]{display:none}
 .methods{display:grid;margin-bottom:10px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);box-shadow:var(--sh-card);overflow:hidden}
@@ -198,6 +206,11 @@ section.is-quiet .sh h2{transition:color .25s var(--ease)}
 .method .md em{font-style:normal;color:var(--text-2)}
 .method .rec{grid-column:3;grid-row:1/3;align-self:center;font-size:11px;font-weight:500;color:var(--text-2);border:1px solid var(--line-2);border-radius:999px;padding:2px 8px;opacity:0;transform:translateX(4px);white-space:nowrap;transition:opacity .1s var(--ease),transform .1s var(--ease)}
 .method.is-rec .rec{opacity:1;transform:none;transition:opacity .18s var(--ease-out),transform .18s var(--ease-out)}
+.redact{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:10px;padding:10px 13px;border:1px solid var(--line);border-radius:9px;background:var(--surface);font-size:13px;color:var(--text-2)}
+.redact label{display:flex;gap:9px;align-items:center;color:var(--text);cursor:pointer}
+.redact .rsum{color:var(--text-3);font-size:12.5px}
+.redact .rlist{flex-basis:100%;margin-top:4px;padding-top:8px;border-top:1px solid var(--line);font-family:var(--mono);font-size:12px;color:var(--text-3);display:grid;gap:3px;max-height:160px;overflow:auto}
+.redact .rlist i{font-style:normal;color:var(--text-2)}
 .tbox{padding:14px}
 .tree{margin:0;max-height:260px;overflow:auto;font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--text-2);padding:11px 13px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2);box-shadow:inset 0 1px 3px rgba(0,0,0,.5);white-space:pre}
 .tree i{font-style:normal;color:var(--text-3)}
@@ -250,12 +263,13 @@ footer{margin-top:32px;font-size:12px;flex-wrap:wrap;color:var(--text-3);display
 <div class="wrap">
   <div class="hero">
     <h1>Chat Transfer</h1>
-    <p>Move your conversations between ChatGPT and Claude, or from one Claude account to another.</p>
+    <p>Move your conversations between Claude, ChatGPT and Gemini, or from one account to another.</p>
     <div class="hero-actions"><button class="btn" id="helpBtn" aria-expanded="false"><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>How it works</button></div>
     <div class="help-wrap" id="helpWrap"><div><div class="help" id="help">
       <div class="hcol"><div class="t">1 · Get your export</div>
         <p><b>ChatGPT</b> Settings → Data controls → Export data. A .zip arrives by email.</p>
         <p><b>Claude</b> Settings → Privacy → Export data. Several .zip files arrive by email: chats, Projects, memory, profile. Drop them all.</p>
+        <p><b>Gemini</b> takeout.google.com → deselect all → tick My Activity → Gemini Apps. Drop the zip.</p>
       </div>
       <div class="hcol"><div class="t">2 · Drop it here</div>
         <p>Drop every .zip you received. The tool reads them in your browser and lists your chats and Projects. Nothing is uploaded.</p>
@@ -268,7 +282,7 @@ footer{margin-top:32px;font-size:12px;flex-wrap:wrap;color:var(--text-3);display
       </div>
     </div></div></div>
     <div class="flow">
-      <div><span class="k">01</span>Export your chats from ChatGPT or Claude</div>
+      <div><span class="k">01</span>Export your chats from Claude, ChatGPT or Gemini</div>
       <div><span class="k">02</span>Drop the file here and pick the chats</div>
       <div><span class="k">03</span>Copy, then paste into the new account</div>
     </div>
@@ -279,7 +293,7 @@ footer{margin-top:32px;font-size:12px;flex-wrap:wrap;color:var(--text-3);display
     <div class="drop" id="drop">
       <div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></div>
       <h3>Drop your export file here</h3>
-      <p>The .zip files from your ChatGPT or Claude export. <button class="lnk" data-help>Where do I get these?</button></p>
+      <p>The .zip files from your Claude, ChatGPT or Gemini export. <button class="lnk" data-help>Where do I get these?</button></p>
       <button class="btn primary" id="pick">Choose file</button>
       <input type="file" id="file" accept=".zip,.json,application/zip,application/json" multiple hidden>
     </div>
@@ -292,10 +306,13 @@ footer{margin-top:32px;font-size:12px;flex-wrap:wrap;color:var(--text-3);display
     <div class="example" id="exampleNote" hidden><span>Showing three example chats.</span><button class="lnk" id="hideEx">Hide</button></div>
     <div class="bar" id="bar">
       <label class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search" autocomplete="off"></label>
-      <div class="seg" role="group"><button data-src="all" aria-pressed="true">All</button><button data-src="chatgpt" aria-pressed="false">ChatGPT</button><button data-src="claude" aria-pressed="false">Claude</button></div>
+      <div class="seg" role="group" id="srcSeg"><button data-src="all" aria-pressed="true">All</button><button data-src="chatgpt" aria-pressed="false">ChatGPT</button><button data-src="claude" aria-pressed="false">Claude</button><button data-src="gemini" aria-pressed="false" hidden>Gemini</button></div>
+      <label class="sortw" title="Sort"><select id="sort" aria-label="Sort"><option value="new">Newest</option><option value="old">Oldest</option><option value="long">Longest</option></select></label>
     </div>
     <div class="card">
-      <div class="sel" id="selRow"><label><input type="checkbox" class="cb" id="selAll"> Select all</label><span class="n" id="count"></span></div>
+      <div class="sel" id="selRow"><label><input type="checkbox" class="cb" id="selAll"> Select all</label>
+        <div class="quick" id="quick"><span>or</span><button class="chip" data-q="30d">Last 30 days</button><button class="chip" data-q="6m">Last 6 months</button><button class="chip" data-q="long20">Longest 20</button></div>
+        <span class="n" id="count"></span></div>
       <div class="list" id="list"></div>
       <div class="foot" id="footRow"><span class="keep" id="keepNote"></span><button class="btn sm" id="clearAll">Clear chats from this browser</button></div>
     </div>
@@ -304,11 +321,12 @@ footer{margin-top:32px;font-size:12px;flex-wrap:wrap;color:var(--text-3);display
   <section id="secTransfer">
     <div class="sh"><span class="k">03</span><h2>Transfer</h2></div>
     <p class="lead" id="whereLead">Where are these chats going?</p>
-    <div class="dest" role="group" data-i="0" id="dest">
+    <div class="dest" role="group" data-i="0" id="dest" style="--n:3;--i:0">
       <button data-dest="claude" aria-pressed="true">Claude</button>
       <button data-dest="chatgpt" aria-pressed="false">ChatGPT</button>
+      <button data-dest="gemini" aria-pressed="false">Gemini</button>
       <span class="ind"></span>
-      <span class="ink" aria-hidden="true"><span>Claude</span><span>ChatGPT</span></span>
+      <span class="ink" aria-hidden="true"><span>Claude</span><span>ChatGPT</span><span>Gemini</span></span>
     </div>
     <p class="lead" id="howLead" style="margin-top:14px">How do you want to move them?</p>
     <div class="methods" role="radiogroup" id="methods">
@@ -338,6 +356,12 @@ footer{margin-top:32px;font-size:12px;flex-wrap:wrap;color:var(--text-3);display
       </button>
     </div>
 
+    <div class="redact" id="redactRow" hidden>
+      <label><input type="checkbox" class="cb" id="redactOn"> Redact personal details before copying</label>
+      <span class="rsum" id="redactSum"></span>
+      <button class="lnk" id="redactPeek" hidden>Preview</button>
+      <div class="rlist" id="redactList" hidden></div>
+    </div>
     <div class="card tbox" id="panel">
       <!-- one at a time -->
       <div id="pEach" hidden>
@@ -359,15 +383,18 @@ footer{margin-top:32px;font-size:12px;flex-wrap:wrap;color:var(--text-3);display
       <!-- bundle -->
       <div id="pBundle" hidden>
         <p class="where" id="whereBundle"></p>
-        <div class="opts" id="opts" hidden>
-          <span>This is long.</span>
-          <label><input type="radio" class="rd" name="mode" value="full" checked> Keep everything</label>
-          <label><input type="radio" class="rd" name="mode" value="condensed"> Shorten (start + last few messages of each chat)</label>
+        <div class="step-head" id="partHead" hidden>
+          <div class="prog"><span class="bar" id="partBar"></span></div>
+          <div class="step-meta"><span id="partPos" class="mono"></span><span id="partDone" class="mono"></span></div>
         </div>
         <textarea class="out" id="out" readonly spellcheck="false"></textarea>
         <div class="stats" id="stats"></div>
         <div class="next">
           <button class="btn primary" id="copy">Copy</button>
+          <div class="nav" id="partNav" hidden>
+            <button class="btn" id="prevPart">Previous</button>
+            <button class="btn" id="nextPart">Next</button>
+          </div>
           <span class="hint" id="hint"></span>
         </div>
       </div>
@@ -437,6 +464,9 @@ const PARSERS={
   memory:{label:'Claude memory',updated:'September 2026',
     looksLike:o=>!!o&&typeof o==='object'&&('conversations_memory' in o||'memory_files' in o||'project_memories' in o),
     complete:o=>typeof o.conversations_memory==='string'||Array.isArray(o.memory_files)},
+  gemini:{label:'Gemini',updated:'September 2026',
+    looksLike:o=>!!o&&typeof o==='object'&&((o.header||'')==='Gemini Apps'||/^Prompted\b/.test(o.title||'')||(Array.isArray(o.products)&&o.products.includes('Gemini Apps'))),
+    complete:o=>typeof o.title==='string'&&typeof o.time==='string'},
   project:{label:'Claude Project',updated:'September 2026',
     looksLike:o=>!!o&&typeof o==='object'&&('prompt_template' in o||Array.isArray(o.docs)),
     complete:o=>'prompt_template' in o&&Array.isArray(o.docs)&&'name' in o},
@@ -446,7 +476,7 @@ function detect(data){
   if(!arr||!arr.length)return{kind:null,arr:[],drift:false};
   const sample=arr.filter(x=>x&&typeof x==='object').slice(0,25);
   if(!sample.length)return{kind:null,arr:[],drift:false};
-  for(const kind of ['memory','project','chatgpt','claude']){
+  for(const kind of ['memory','project','gemini','chatgpt','claude']){
     const p=PARSERS[kind];
     const hits=sample.filter(p.looksLike).length;
     if(hits<Math.ceil(sample.length/2))continue;
@@ -454,6 +484,48 @@ function detect(data){
     return{kind,arr,drift:ok<Math.ceil(hits/2)};
   }
   return{kind:null,arr,drift:false};
+}
+/* Google Takeout gives Gemini history as a flat activity list, one prompt per item, no conversation ids.
+   Consecutive prompts less than 30 minutes apart are treated as one conversation. */
+const stripHTML=h=>{const d=document.createElement('div');d.innerHTML=h||'';return (d.textContent||'').replace(/\u00a0/g,' ').trim();};
+function parseGemini(arr){
+  const items=[];
+  for(const a of arr){
+    if(!a||typeof a!=='object')continue;
+    const t=Date.parse(a.time||'');if(isNaN(t))continue;
+    const prompt=(a.title||'').replace(/^Prompted\s*/i,'').trim();
+    let reply='';
+    if(Array.isArray(a.safeHtmlItem))reply=a.safeHtmlItem.map(x=>stripHTML(x&&x.html)).filter(Boolean).join('\n');
+    if(!reply&&Array.isArray(a.subtitles))reply=a.subtitles.map(x=>x&&x.name).filter(Boolean).join('\n');
+    if(!prompt&&!reply)continue;
+    items.push({t,prompt,reply});
+  }
+  items.sort((x,y)=>x.t-y.t);
+  const convs=[];let cur=null;
+  for(const it of items){
+    if(!cur||it.t-cur.last>30*60*1000){cur={start:it.t,last:it.t,messages:[]};convs.push(cur);}
+    cur.last=it.t;
+    if(it.prompt)cur.messages.push({role:'user',text:it.prompt,ts:it.t});
+    if(it.reply)cur.messages.push({role:'assistant',text:it.reply,ts:it.t});
+  }
+  return convs.filter(c=>c.messages.length).map(c=>({id:'gemini:'+c.start+':'+hash(c.messages[0].text),source:'gemini',title:firstLine(c.messages),created:c.start,updated:c.last,messages:c.messages}));
+}
+/* Takeout's HTML flavour: each activity is a .outer-cell with the prompt and date in the first .content-cell */
+function parseGeminiHTML(html){
+  const doc=new DOMParser().parseFromString(html,'text/html');
+  const cells=[...doc.querySelectorAll('.outer-cell')];
+  const arr=[];
+  for(const cell of cells){
+    const c=cell.querySelector('.content-cell');if(!c)continue;
+    const parts=c.innerHTML.split(/<br\s*\/?>/i).map(stripHTML).filter(Boolean);
+    const title=parts.find(p=>/^Prompted\b/i.test(p))||'';
+    const dateStr=parts.find(p=>/\d{4}/.test(p)&&/\d{1,2}:\d{2}/.test(p))||'';
+    const time=new Date(dateStr.replace(/\u202f/g,' '));
+    const reply=[...cell.querySelectorAll('.content-cell')].slice(1).map(x=>stripHTML(x.innerHTML)).filter(p=>p&&!/^(Products|Details|Why is this here)/i.test(p)).join('\n');
+    if(!title||isNaN(time))continue;
+    arr.push({header:'Gemini Apps',title,time:time.toISOString(),safeHtmlItem:reply?[{html:reply}]:[]});
+  }
+  return arr;
 }
 function parseMemory(arr){
   const out=[];
@@ -543,36 +615,39 @@ async function handleFiles(files){
       if(/\.zip$/i.test(file.name)||file.type==='application/zip'){
         if(typeof JSZip==='undefined'){log('The unzip library did not load. Check your connection, reload the page, or unzip the file and drop the .json files instead.');continue;}
         const zip=await JSZip.loadAsync(file);
-        const names=Object.keys(zip.files).filter(n=>/\.json$/i.test(n)&&!zip.files[n].dir&&!/(^|\/)(users|login_history)\.json$/i.test(n));
+        const names=Object.keys(zip.files).filter(n=>(/\.json$/i.test(n)||/gemini[^/]*\/[^/]*\.html$/i.test(n))&&!zip.files[n].dir&&!/(^|\/)(users|login_history)\.json$/i.test(n));
         if(!names.length){log('  No .json files inside '+file.name+'.');continue;}
         for(const n of names)texts.push({name:n,text:await zip.files[n].async('string')});
-      }else if(/\.json$/i.test(file.name)||file.type==='application/json'){
+      }else if(/\.(json|html)$/i.test(file.name)||file.type==='application/json'||file.type==='text/html'){
         texts.push({name:file.name,text:await file.text()});
-      }else{log('  '+file.name+' is not a .zip or .json file.');continue;}
+      }else{log('  '+file.name+' is not a .zip, .json or .html file.');continue;}
     }catch(e){log('  Could not read '+file.name+': '+e.message);continue;}
-    let fileChats=0,fileProjects=0,fileMemory=0,memNotes=0,memProj=0,expected={chatgpt:0,claude:0,project:0,memory:0},drifted=new Set();
+    let fileChats=0,fileProjects=0,fileMemory=0,memNotes=0,memProj=0,geminiPrompts=0,expected={chatgpt:0,claude:0,gemini:0,project:0,memory:0},drifted=new Set();
     for(const t of texts){
-      let data;try{data=JSON.parse(t.text);}catch{unknown++;continue;}
+      let data;
+      if(/\.html$/i.test(t.name)){data=parseGeminiHTML(t.text);if(!data.length){unknown++;continue;}}
+      else{try{data=JSON.parse(t.text);}catch{unknown++;continue;}}
       const{kind,arr,drift}=detect(data);
       if(!kind){unknown++;continue;}
       if(drift)drifted.add(kind);
-      expected[kind]+=arr.length;
+      if(kind==='gemini')geminiPrompts+=arr.length;else expected[kind]+=arr.length;
       let parsed=[];
-      try{parsed=kind==='chatgpt'?parseChatGPT(arr):kind==='claude'?parseClaude(arr):kind==='memory'?parseMemory(arr):parseProjects(arr);}catch(e){drifted.add(kind);}
+      try{parsed=kind==='chatgpt'?parseChatGPT(arr):kind==='claude'?parseClaude(arr):kind==='gemini'?parseGemini(arr):kind==='memory'?parseMemory(arr):parseProjects(arr);}catch(e){drifted.add(kind);}
       if(parsed.length)await dbPut(parsed);
       if(kind==='project')fileProjects+=parsed.length;else if(kind==='memory'){fileMemory+=parsed.length;for(const p of parsed){memNotes+=p.memoryFiles.length;memProj+=Object.keys(p.projectMemories).length;}}else fileChats+=parsed.length;
     }
     chats+=fileChats;projects+=fileProjects;memory+=fileMemory;
     const exChats=expected.chatgpt+expected.claude,exProj=expected.project;
+    if(geminiPrompts)log('  Gemini: '+geminiPrompts+' prompts grouped into '+fileChats+' conversation'+(fileChats===1?'':'s')+' by time, since Google\'s export has no conversation boundaries.');
     if(fileMemory)log('  Memory found: what Claude knows about you'+(memProj?', '+memProj+' project memor'+(memProj===1?'y':'ies'):'')+(memNotes?', '+memNotes+' note'+(memNotes===1?'':'s'):'')+'.');
-    if(fileChats||fileProjects){
+    if((fileChats||fileProjects)&&(exChats||exProj)){
       const parts=[];
       if(exChats)parts.push(fileChats+' of '+exChats+' chat'+(exChats===1?'':'s'));
       if(exProj)parts.push(fileProjects+' of '+exProj+' project'+(exProj===1?'':'s'));
       log('  '+parts.join(', ')+' imported.'+((exChats&&fileChats<exChats)||(exProj&&fileProjects<exProj)?' The rest were empty.':''));
     }else if(exChats||exProj){
       log('  Found '+(exChats||exProj)+' '+(exChats?'chats':'projects')+' but imported none.');
-    }else if(!fileMemory)log('  Nothing recognisable in '+file.name+'. '+(/project/i.test(file.name)?'':'ChatGPT and Claude exports come as a .zip; Claude may send several (conversations-000.zip holds the chats, projects-000.zip holds Projects).'));
+    }else if(!fileMemory&&!geminiPrompts)log('  Nothing recognisable in '+file.name+'. '+(/project/i.test(file.name)?'':'ChatGPT and Claude exports come as a .zip; Claude may send several (conversations-000.zip holds the chats, projects-000.zip holds Projects).'));
     for(const k of drifted){
       const p=PARSERS[k];
       logHTML('  <b>This looks like a '+p.label+' export in a newer format than this tool knows</b> (its '+p.label+' parser was last updated '+p.updated+'). Some or all of it may not have come through. <a href="https://github.com/Gikunjuu/chat-transfer/issues/new?title='+encodeURIComponent(p.label+' export format changed')+'" target="_blank" rel="noopener">Report it</a> so the parser can be updated.');
@@ -604,7 +679,8 @@ const EX=[
 ];
 
 /* state */
-const S={all:[],filter:'all',q:'',checked:new Set(),open:null,examples:false,dest:'claude',method:'bundle',step:0};
+const S={all:[],filter:'all',q:'',checked:new Set(),open:null,examples:false,dest:'claude',method:'bundle',step:0,sort:'new',part:0,redact:false};
+let PARTS_DONE=new Set();
 let DONE=new Set();try{DONE=new Set(JSON.parse(localStorage.getItem('ct-done')||'[]'));}catch{}
 const saveDone=()=>{try{localStorage.setItem('ct-done',JSON.stringify([...DONE]));}catch{}};
 const listEl=document.getElementById('list'),countEl=document.getElementById('count');
@@ -615,13 +691,41 @@ async function load(){
   if(S.examples)items=EX;
   const pm={};items.filter(c=>c.kind==='memory').forEach(m=>Object.assign(pm,m.projectMemories||{}));
   items.forEach(c=>{if(c.kind==='project'){const id=c.id.replace(/^project:/,'');c.memory=(pm[id]||'').trim()||null;}});
-  S.all=items.sort((a,b)=>(a.kind==='memory')-(b.kind==='memory')?((b.kind==='memory')-(a.kind==='memory')):(b.updated||0)-(a.updated||0));
+  // duplicates: same title, same source, started within 36 hours; the longest is the original, the rest are forks or retries
+  items.forEach(c=>{delete c.dupOf;});
+  const byKey={};
+  items.filter(c=>!c.kind).forEach(c=>{const k=c.source+'|'+(c.title||'').trim().toLowerCase();(byKey[k]=byKey[k]||[]).push(c);});
+  for(const k in byKey){
+    const g=byKey[k].sort((a,b)=>(a.created||0)-(b.created||0));
+    if(g.length<2)continue;
+    let cluster=[g[0]];
+    const flush=()=>{if(cluster.length>1){const lead=cluster.reduce((m,c)=>c.messages.length>m.messages.length?c:m);cluster.forEach(c=>{if(c!==lead)c.dupOf=lead.id;});}};
+    for(let i=1;i<g.length;i++){if((g[i].created||0)-(cluster[cluster.length-1].created||0)<=36*3600*1000)cluster.push(g[i]);else{flush();cluster=[g[i]];}}
+    flush();
+  }
+  S.all=items;
   S.checked=new Set();
+  document.getElementById('srcSeg').querySelector('[data-src=gemini]').hidden=!items.some(c=>c.source==='gemini');
   document.getElementById('exampleNote').hidden=!S.examples;
   render();
 }
-const visible=()=>{const q=S.q.trim().toLowerCase();return S.all.filter(c=>(S.filter==='all'||c.source===S.filter)&&(!q||c.title.toLowerCase().includes(q)||c.messages.some(m=>m.text.toLowerCase().includes(q))));};
-const label=s=>s==='chatgpt'?'ChatGPT':'Claude';
+const visible=()=>{
+  const q=S.q.trim().toLowerCase();
+  const list=S.all.filter(c=>(S.filter==='all'||c.source===S.filter)&&(!q||c.title.toLowerCase().includes(q)||c.messages.some(m=>m.text.toLowerCase().includes(q))));
+  const cmp=S.sort==='old'?(a,b)=>(a.updated||0)-(b.updated||0):S.sort==='long'?(a,b)=>b.messages.length-a.messages.length:(a,b)=>(b.updated||0)-(a.updated||0);
+  list.sort((a,b)=>{const am=a.kind==='memory',bm=b.kind==='memory';if(am!==bm)return am?-1:1;return cmp(a,b);});
+  // keep forks right under their original
+  const out=[],placed=new Set();
+  for(const c of list){
+    if(placed.has(c.id))continue;
+    if(c.dupOf&&list.some(x=>x.id===c.dupOf))continue;
+    out.push(c);placed.add(c.id);
+    list.filter(x=>x.dupOf===c.id).forEach(x=>{out.push(x);placed.add(x.id);});
+  }
+  return out;
+};
+const selectable=list=>list.filter(c=>!c.dupOf);
+const label=s=>s==='chatgpt'?'ChatGPT':s==='gemini'?'Gemini':'Claude';
 const isProj=c=>c.kind==='project';
 const isMem=c=>c.kind==='memory';
 const countLabel=c=>isMem(c)?(Math.round((c.memoryText||'').length/1000)+'k chars'+(c.memoryFiles&&c.memoryFiles.length?' · '+c.memoryFiles.length+' notes':'')):isProj(c)?(c.messages.filter(m=>m.role==='tool').length+' file'+(c.messages.filter(m=>m.role==='tool').length===1?'':'s')):(c.messages.length+' messages');
@@ -638,14 +742,14 @@ function render(){
   listEl.parentElement.classList.toggle('is-empty',empty);
   document.getElementById('keepNote').innerHTML=(S.examples?'Examples only. Nothing has been saved.':'<b>'+S.all.length+' item'+(S.all.length===1?'':'s')+'</b> saved in this browser until you clear them.')+(matchMedia('(hover:hover)').matches?'<span class="kh">Press <kbd>?</kbd> for shortcuts</span>':'');
   countEl.textContent=S.checked.size+' / '+S.all.length+' selected';
-  document.getElementById('selAll').checked=vis.length>0&&vis.every(c=>S.checked.has(c.id));
+  {const sel=selectable(vis);document.getElementById('selAll').checked=sel.length>0&&sel.every(c=>S.checked.has(c.id));}
   listEl.innerHTML=vis.length?vis.map(c=>`
-    <div class="chat ${S.open===c.id?'open':''}">
+    <div class="chat ${S.open===c.id?'open':''}${c.dupOf?' is-dup':''}">
       <div class="head">
         <input type="checkbox" class="cb" data-check="${esc(c.id)}" aria-label="Select" ${S.checked.has(c.id)?'checked':''}>
         <button class="open" data-open="${esc(c.id)}">
           <span class="t">${esc(c.title)}</span>
-          <span class="m"><span class="src">${isMem(c)?'Claude memory':isProj(c)?'Claude Project':label(c.source)}</span><span>${fmtDate(c.updated)}</span><span>·</span><span>${countLabel(c)}</span></span>
+          <span class="m"><span class="src">${isMem(c)?'Claude memory':isProj(c)?'Claude Project':label(c.source)}</span><span>${fmtDate(c.updated)}</span><span>·</span><span>${countLabel(c)}</span>${c.dupOf?'<span class="dup" title="Same title as a longer chat started around the same time. Left unticked by Select all.">Shorter copy</span>':''}</span>
           <span class="snip">${esc(snippet(c,q))}</span>
         </button>
       </div>
@@ -657,7 +761,7 @@ function render(){
       </div></div>
     </div>`).join('')
   :'<div class="empty">'+(S.all.length?'No chats match that search.':'Nothing here yet. Import your export above, or <button class="lnk" data-ex>load three example chats</button> to see how it works.')+'</div>';
-  S.step=0;
+  S.step=0;S.part=0;PARTS_DONE.clear();
   build();
 }
 
@@ -685,6 +789,29 @@ function condensed(c,max){
   return md({...c,messages:[...head,{role:'tool',text:'[… '+(c.messages.length-8)+' earlier messages omitted …]'},...tail]},max);
 }
 const $=id=>document.getElementById(id);
+/* redaction: emails, phones, cards (Luhn-checked), and keys or tokens with a recognisable shape */
+const RX={
+  email:/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g,
+  key:/\b(?:sk-ant-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{30,}|AKIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z_-]{35}|eyJ[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{8,}|(?:Bearer|token|api[_-]?key|secret)[=:\s]+[A-Za-z0-9_\-\.]{20,})/g,
+  card:/\b(?:\d[ -]?){13,19}\b/g,
+  phone:/(?<![\w\/.-])(?:\+?\d{1,3}[\s.-]?)?(?:\(\d{2,4}\)|\d{2,4})[\s.-]\d{3,4}[\s.-]?\d{3,4}(?![\w-])/g,
+};
+const luhn=s=>{const d=s.replace(/\D/g,'');if(d.length<13)return false;let sum=0,alt=false;for(let i=d.length-1;i>=0;i--){let n=+d[i];if(alt){n*=2;if(n>9)n-=9;}sum+=n;alt=!alt;}return sum%10===0;};
+function findPII(text){
+  const hits={email:[],key:[],card:[],phone:[]};
+  for(const m of text.matchAll(RX.email))hits.email.push(m[0]);
+  for(const m of text.matchAll(RX.key))hits.key.push(m[0]);
+  for(const m of text.matchAll(RX.card))if(luhn(m[0]))hits.card.push(m[0]);
+  const noCards=text.replace(RX.card,m=>luhn(m)?' ':m);
+  for(const m of noCards.matchAll(RX.phone)){const d=m[0].replace(/\D/g,'');if(d.length>=9&&d.length<=15)hits.phone.push(m[0].trim());}
+  return hits;
+}
+function redact(text){
+  if(!S.redact)return text;
+  return text.replace(RX.email,'[email]').replace(RX.key,'[key]').replace(RX.card,m=>luhn(m)?'[card number]':m).replace(RX.phone,m=>{const d=m.replace(/\D/g,'');return d.length>=9&&d.length<=15?'[phone]':m;});
+}
+const R=redact;
+const maskHit=h=>h.length<=8?h[0]+'…':h.slice(0,3)+'…'+h.slice(-3);
 const safeName=t=>(t||'untitled').replace(/[\/\\:*?"<>|\u0000-\u001f]/g,'-').replace(/\s+/g,' ').trim().slice(0,80)||'untitled';
 const ymd=ts=>{const d=ts?new Date(ts):new Date();if(isNaN(d))return'undated';const p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());};
 function fileFor(c){
@@ -695,18 +822,18 @@ function folderPlan(targets){
   const files={};const used=new Set();
   const uniq=p=>{let q=p,i=2;while(used.has(q.toLowerCase())){q=p.replace(/(\.md)?$/,' ('+i+++')$1');}used.add(q.toLowerCase());return q;};
   const chats=targets.filter(c=>!isProj(c)&&!isMem(c)),projs=targets.filter(isProj),mems=targets.filter(isMem);
-  for(const c of chats)files[uniq('chats/'+ymd(c.created)+' '+safeName(c.title)+'.md')]=fileFor(c);
+  for(const c of chats)files[uniq('chats/'+ymd(c.created)+' '+safeName(c.title)+'.md')]=R(fileFor(c));
   for(const p of projs){
     const base=uniq('projects/'+safeName(p.title))+'/';
     const instr=p.messages.find(m=>m.role==='user');
     files[base+'README.md']='# '+p.title+'\n\n'+(p.description||'')+'\n\nInstructions are in instructions.md; knowledge files are under files/.'+(p.memory?' What Claude had learned inside this Project is in memory.md.':'')+'\n';
-    files[base+'instructions.md']=instr?instr.text+'\n':'(no instructions)\n';
-    if(p.memory)files[base+'memory.md']=p.memory+'\n';
-    p.messages.filter(m=>m.role==='tool'&&m.label&&m.label!=='Note').forEach(m=>{files[base+'files/'+safeName(m.label)]=m.text+'\n';});
+    files[base+'instructions.md']=R(instr?instr.text+'\n':'(no instructions)\n');
+    if(p.memory)files[base+'memory.md']=R(p.memory+'\n');
+    p.messages.filter(m=>m.role==='tool'&&m.label&&m.label!=='Note').forEach(m=>{files[base+'files/'+safeName(m.label)]=R(m.text+'\n');});
   }
   for(const mm of mems){
-    if(mm.memoryText)files['memory/what-claude-knows-about-you.md']=mm.memoryText+'\n';
-    (mm.memoryFiles||[]).forEach(f=>{files['memory/notes/'+f.path.split('/').filter(Boolean).map(safeName).join('/')]=f.content+'\n';});
+    if(mm.memoryText)files['memory/what-claude-knows-about-you.md']=R(mm.memoryText+'\n');
+    (mm.memoryFiles||[]).forEach(f=>{files['memory/notes/'+f.path.split('/').filter(Boolean).map(safeName).join('/')]=R(f.content+'\n');});
   }
   const index=targets.map(c=>({id:c.id,kind:c.kind||'chat',title:c.title,source:c.source,created:ymd(c.created),updated:ymd(c.updated),messages:c.messages.length}));
   files['index.json']=JSON.stringify(index,null,2)+'\n';
@@ -742,6 +869,7 @@ function preamble(targets,d,forFile){
     if(nC)s+='Below '+(nC===1?'is a transcript of an earlier conversation':'are transcripts of '+nC+' earlier conversations')+' I had with an AI assistant. Read them as background, then help me continue from where they left off.\n\n';
     if(nP)s+=(nC?'Also included ':'Below ')+(nP===1?'is a Project':'are '+nP+' Projects')+' from my previous account. '+(d==='claude'?'For each one, help me recreate it: I will make a Project with the same name, paste the instructions into its custom instructions, and add each file to its knowledge.':'Treat the instructions and files as standing context for our conversation.')+'\n\n';
   }
+  if(!forFile)s+='When you have read it, reply with one sentence confirming that, then wait for my question. No summary.\n\n';
   return s+'---\n\n';
 }
 function singleText(c,d){
@@ -749,20 +877,53 @@ function singleText(c,d){
   const who=isProj(c)?'Project':'conversation';
   return '# Continue an earlier '+who+'\n\n'+(isProj(c)
     ?(d==='claude'?'This is a Project from my previous account. Help me recreate it: I will make a Project with the same name, paste the instructions into its custom instructions, and add each file to its knowledge.':'Treat these instructions and files as standing context for our conversation.')
-    :'This is a transcript of an earlier conversation I had with an AI assistant. Read it, then help me pick up exactly where it left off.')+'\n\n---\n\n'+md(c,Infinity);
+    :'This is a transcript of an earlier conversation I had with an AI assistant. Read it, then help me pick up exactly where it left off.')+' When you have read it, reply with one sentence confirming that, then wait for my question. No summary.\n\n---\n\n'+md(c,Infinity);
+}
+/* split a long bundle into parts that each fit one paste, never dropping a message */
+const PART_LIMIT=40000;
+function splitParts(preambleText,targets){
+  const pieces=[];
+  for(const c of targets){
+    const whole=md(c,Infinity);
+    if(whole.length<=PART_LIMIT*0.8){pieces.push(whole);continue;}
+    const head=whole.slice(0,whole.indexOf('\n\n')+2);
+    let buf=head,k=1;
+    for(const m of c.messages){
+      const line='**'+(m.label?m.label:m.role==='user'?'User':m.role==='assistant'?label(c.source):'Tool')+':** '+m.text+'\n\n';
+      if(buf.length+line.length>PART_LIMIT*0.8&&buf!==head){pieces.push(buf+'_(continues)_\n\n');buf=head.replace(/\n\n$/,' (continued, '+(++k)+')\n\n');}
+      buf+=line;
+    }
+    pieces.push(buf);
+  }
+  const parts=[];let cur='';
+  for(const p of pieces){
+    if(cur&&cur.length+p.length+5>PART_LIMIT){parts.push(cur);cur='';}
+    cur+=(cur?'---\n\n':'')+p;
+  }
+  if(cur)parts.push(cur);
+  const N=parts.length;
+  if(N<=1)return[preambleText+parts.join('')];
+  return parts.map((body,i)=>{
+    const n=i+1;
+    let head;
+    if(n===1)head=preambleText.replace(/When you have read it, reply with one sentence confirming that, then wait for my question\. No summary\.\n\n/,'')+'This is part 1 of '+N+'. More parts follow. After each part, reply with one short line saying you are ready for the next one. Do not summarise.\n\n---\n\n';
+    else head='# Part '+n+' of '+N+'\n\nContinuation of the same context. Keep reading.'+(n===N?' This is the last part. When you have read it, reply with one sentence confirming you have everything, then wait for my question.':' Reply with one short line when you are ready for the next part.')+'\n\n---\n\n';
+    return head+body;
+  });
 }
 function recommend(n,d){ if(n<=15)return'bundle'; if(n>50)return'folder'; return d==='claude'?'file':'each'; }
-const memWhere=d=>d==='claude'?'Settings → Profile → <b>What should Claude know about you</b>':'Settings → Personalization → <b>Custom instructions</b>';
+const memWhere=d=>d==='claude'?'Settings → Profile → <b>What should Claude know about you</b>':d==='gemini'?'Settings → <b>Saved info</b>':'Settings → Personalization → <b>Custom instructions</b>';
+const destName=d=>d==='chatgpt'?'ChatGPT':d==='gemini'?'Gemini':'Claude';
 function setMethod(m){S.method=m;document.querySelectorAll('.method').forEach(b=>b.setAttribute('aria-checked',String(b.dataset.m===m)));build();}
 function build(){
   const targets=S.all.filter(c=>S.checked.has(c.id));
-  const d=S.dest,name=d==='chatgpt'?'ChatGPT':'Claude',n=targets.length;
+  const d=S.dest,name=destName(d),n=targets.length;
   // method cards
   const rec=recommend(n,d);
   document.querySelectorAll('.method').forEach(b=>b.classList.toggle('is-rec',b.dataset.m===rec&&n>0));
   $('mEachN').textContent=n>1?n+' steps.':'';
   $('mFileT').textContent=d==='claude'?'Project file':'Attach as a file';
-  $('mFileD').textContent=d==='claude'?'One .md file to add to a Claude Project. Every chat in that Project can draw on it. Best for large archives.':'One .md file to attach to a new ChatGPT chat or a ChatGPT Project. Best for large archives.';
+  $('mFileD').textContent=d==='claude'?'One .md file to add to a Claude Project. Every chat in that Project can draw on it. Best for large archives.':'One .md file to attach to a new '+name+' chat'+(d==='chatgpt'?' or a ChatGPT Project':'')+'. Best for large archives.';
   ['pEach','pBundle','pFile','pFolder'].forEach(id=>$(id).hidden=true);
   $('pNone').hidden=n>0;
   const choose=n>=2;
@@ -772,6 +933,20 @@ function build(){
   $('whereLead').textContent=n===1?'Where is this '+noun+' going?':'Where are these '+n+' '+(noun==='memory'?'item':noun)+'s going?';
   $('secTransfer').classList.toggle('is-quiet',!n);
   $('pNone').textContent=S.all.length?'Tick at least one chat above.':'Import your chats first.';
+  // redaction row
+  $('redactRow').hidden=!n;
+  if(n){
+    const raw=targets.map(c=>md(c,Infinity)).join('\n');
+    const h=findPII(raw);
+    const parts=[['email','email address'],['phone','phone number'],['card','card number'],['key','key or token']].filter(([k])=>h[k].length).map(([k,l])=>h[k].length+' '+l+(h[k].length===1?'':'s'));
+    const any=parts.length>0;
+    $('redactSum').textContent=any?'Found '+parts.join(', ')+'.':'Nothing that looks personal found in this selection.';
+    $('redactPeek').hidden=!any;
+    if(!any){$('redactList').hidden=true;$('redactPeek').textContent='Preview';}
+    const all=[...h.email.map(x=>['email',x]),...h.phone.map(x=>['phone',x]),...h.card.map(x=>['card',x]),...h.key.map(x=>['key',x])];
+    const seen=new Set();
+    $('redactList').innerHTML=all.filter(([,x])=>!seen.has(x)&&seen.add(x)).slice(0,40).map(([k,x])=>'<span><i>['+k+']</i> '+esc(maskHit(x))+'</span>').join('')+(seen.size>40?'<span>… and more</span>':'');
+  }
   if(!n)return;
   const m=choose?S.method:'bundle';
   if(m==='each'){
@@ -782,7 +957,7 @@ function build(){
     $('stepPos').textContent=(S.step+1)+' / '+n;
     $('stepDone').textContent=doneCount+' copied';
     $('stepTitle').innerHTML=esc(c.title)+(doneHere?'<span class="done">Copied</span>':'');
-    $('outEach').value=singleText(c,d);
+    $('outEach').value=R(singleText(c,d));
     $('prevStep').disabled=S.step===0;$('nextStep').disabled=S.step===n-1;
     {const lbl=doneHere?'Copy again':isMem(c)?'Copy memory':'Copy this chat';if($('copyEach').classList.contains('is-copied'))$('copyEach').dataset.label=lbl;else $('copyEach').textContent=lbl;}
     if(isMem(c))$('hintEach').innerHTML='This one does not go into a chat. Paste it into '+memWhere(d)+' in the new account.';
@@ -791,11 +966,11 @@ function build(){
   }
   if(m==='file'){
     $('pFile').hidden=false;
-    const text=preamble(targets,d,true)+targets.map(c=>md(c,Infinity)).join('---\n\n');
+    const text=R(preamble(targets,d,true)+targets.map(c=>md(c,Infinity)).join('---\n\n'));
     $('outFile').value=text;
     $('whereFile').innerHTML=d==='claude'
       ?'<b>Download</b> the file, open Claude in the destination account, create a Project, and add <b>chats.md</b> under its knowledge. Every chat in that Project can now draw on all of these.'
-      :'<b>Download</b> the file, open ChatGPT, start a new chat (or a Project) and <b>attach chats.md</b>. It can then draw on all of these.';
+      :'<b>Download</b> the file, open '+name+', start a new chat'+(d==='chatgpt'?' (or a Project)':'')+' and <b>attach chats.md</b>. It can then draw on all of these.';
     $('statsFile').innerHTML='<span>'+n+' item'+(n===1?'':'s')+'</span><span>'+text.length.toLocaleString()+' chars</span><span>'+(text.length/1024).toFixed(0)+' KB</span>';
     $('hintFile').textContent=text.length>30*1024*1024?'Over 30 MB. Split your selection into a few files.':'';
     return;
@@ -811,51 +986,82 @@ function build(){
   }
   // bundle
   $('pBundle').hidden=false;
-  const mode=document.querySelector('input[name=mode]:checked').value;
   $('whereBundle').classList.toggle('mem',n===1&&isMem(targets[0]));
   $('whereBundle').innerHTML=n===1&&isMem(targets[0])
     ?'<b>This goes into Settings, not a chat.</b> Copy, open the new account, go to '+memWhere(d)+', and paste. From then on it starts every chat already knowing this.'
     :n===1
     ?'<b>Copy</b> the text, open '+name+' in the account you are moving to, start a new chat and <b>paste</b>. It picks up where this one left off.'
-    :d==='claude'?'<b>Copy</b> the text, open Claude in the account you are moving to, start a new chat and <b>paste</b>. That one chat will remember all of these.'
-    :'<b>Copy</b> the text, open ChatGPT, start a new chat and <b>paste</b>. That one chat will remember all of these.';
+    :'<b>Copy</b> the text, open '+name+(d==='claude'?' in the account you are moving to':'')+', start a new chat and <b>paste</b>. That one chat will remember all of these.';
   if(n>1&&nMm)$('whereBundle').innerHTML+=' Your memory is included as background. It works better pasted into '+memWhere(d)+' on its own, so consider moving it separately.';
   if($('copy').classList.contains('is-copied'))$('copy').dataset.label='Copy for '+name;else $('copy').textContent='Copy for '+name;
-  let s=n===1?'':preamble(targets,d,false);
-  const full=n===1?singleText(targets[0],d):s+targets.map(c=>md(c,Infinity)).join('---\n\n');
-  const bigSource=full.length>40000;
-  $('opts').hidden=!bigSource;
-  if(!bigSource&&mode!=='full')document.querySelector('input[name=mode][value=full]').checked=true;
-  s=(bigSource&&mode==='condensed')?(n===1?full:s+targets.map(c=>condensed(c,Infinity)).join('---\n\n')):full;
-  if(n===1)$('opts').hidden=true;
-  $('out').value=s;
-  const big=s.length>40000,nP=targets.filter(isProj).length,nC=n-nP;
-  $('stats').innerHTML='<span>'+[nC?nC+' chat'+(nC===1?'':'s'):'',nP?nP+' project'+(nP===1?'':'s'):''].filter(Boolean).join(', ')+'</span><span>'+s.length.toLocaleString()+' chars</span><span>~'+Math.round(s.length/4).toLocaleString()+' tokens</span>';
-  $('hint').innerHTML=big?(n===1?'Long for one message. If '+name+' rejects it, save it as a .txt and attach it instead.':'Too long for one message. Shorten above, or switch to '+(d==='claude'?'Project file':'Attach as a file')+'.'):'Short enough to paste straight into a new '+name+' chat.';
+  let parts;
+  if(n===1)parts=[singleText(targets[0],d)];
+  else parts=splitParts(preamble(targets,d,false),targets);
+  parts=parts.map(R);
+  const N=parts.length;
+  S.part=Math.min(Math.max(0,S.part),N-1);
+  const multi=N>1;
+  $('partHead').hidden=!multi;$('partNav').hidden=!multi;
+  const text=parts[S.part];
+  $('out').value=text;
+  const nP=targets.filter(isProj).length,nC=n-nP;
+  const total=parts.reduce((t,p)=>t+p.length,0);
+  const what=[nC?nC+' chat'+(nC===1?'':'s'):'',nP?nP+' project'+(nP===1?'':'s'):''].filter(Boolean).join(', ');
+  if(multi){
+    const done=PARTS_DONE.size;
+    $('partBar').style.width=(done/N*100)+'%';
+    $('partPos').textContent='Part '+(S.part+1)+' of '+N;
+    $('partDone').textContent=done+' copied';
+    $('prevPart').disabled=S.part===0;$('nextPart').disabled=S.part===N-1;
+    const lbl=(PARTS_DONE.has(S.part)?'Copy part '+(S.part+1)+' again':'Copy part '+(S.part+1));
+    if($('copy').classList.contains('is-copied'))$('copy').dataset.label=lbl;else $('copy').textContent=lbl;
+    $('stats').innerHTML='<span>'+what+'</span><span>'+N+' parts</span><span>'+total.toLocaleString()+' chars total</span>';
+    $('hint').textContent=done===N?'All '+N+' parts copied. Ask your question in that chat.':'Too long for one paste, so it is split. Copy this part, paste it into the same new '+name+' chat, wait for the one-line reply, then come back for the next part. Nothing is left out.';
+  }else{
+    $('stats').innerHTML='<span>'+what+'</span><span>'+text.length.toLocaleString()+' chars</span><span>~'+Math.round(text.length/4).toLocaleString()+' tokens</span>';
+    $('hint').textContent='Short enough to paste straight into a new '+name+' chat.';
+  }
 }
 
 /* events */
 document.getElementById('q').oninput=e=>{S.q=e.target.value;render();};
 document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.seg button').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');S.filter=b.dataset.src;render();});
-let destT;document.querySelectorAll('.dest button').forEach((b,i)=>b.onclick=()=>{const d=b.parentElement;if(d.dataset.i===String(i))return;document.querySelectorAll('.dest button').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');d.dataset.i=i;d.classList.add('moving');clearTimeout(destT);destT=setTimeout(()=>d.classList.remove('moving'),200);S.dest=b.dataset.dest;build();});
-document.getElementById('selAll').onchange=e=>{visible().forEach(c=>e.target.checked?S.checked.add(c.id):S.checked.delete(c.id));render();};
+let destT;document.querySelectorAll('.dest button').forEach((b,i)=>b.onclick=()=>{const d=b.parentElement;if(d.dataset.i===String(i))return;const from=+d.dataset.i;document.querySelectorAll('.dest button').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');d.dataset.i=i;d.style.setProperty('--i',i);d.style.setProperty('--o',i>from?'left center':'right center');d.classList.add('moving');clearTimeout(destT);destT=setTimeout(()=>d.classList.remove('moving'),200);S.dest=b.dataset.dest;build();});
+document.getElementById('selAll').onchange=e=>{(e.target.checked?selectable(visible()):visible()).forEach(c=>e.target.checked?S.checked.add(c.id):S.checked.delete(c.id));render();};
+$('redactOn').onchange=e=>{S.redact=e.target.checked;build();toast(S.redact?'Personal details will be replaced in everything you copy or download.':'Redaction off.');};
+$('redactPeek').onclick=()=>{const l=$('redactList');l.hidden=!l.hidden;$('redactPeek').textContent=l.hidden?'Preview':'Hide';};
+document.getElementById('sort').onchange=e=>{S.sort=e.target.value;render();};
+document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{
+  const now=Date.now(),vis=selectable(visible()).filter(c=>!isMem(c));
+  let pick=[];
+  if(b.dataset.q==='30d')pick=vis.filter(c=>now-(c.updated||0)<30*864e5);
+  else if(b.dataset.q==='6m')pick=vis.filter(c=>now-(c.updated||0)<183*864e5);
+  else if(b.dataset.q==='long20')pick=[...vis].sort((a,c)=>c.messages.length-a.messages.length).slice(0,20);
+  S.checked=new Set(pick.map(c=>c.id));render();
+  toast(pick.length?pick.length+' selected':'Nothing matches that');
+});
 function setChecked(id,on){
   on?S.checked.add(id):S.checked.delete(id);
   const cb=listEl.querySelector('[data-check="'+CSS.escape(id)+'"]');if(cb)cb.checked=on;
   countEl.textContent=S.checked.size+' / '+S.all.length+' selected';const vis=visible();
-  document.getElementById('selAll').checked=vis.length>0&&vis.every(c=>S.checked.has(c.id));S.step=0;build();
+  {const sel=selectable(vis);document.getElementById('selAll').checked=sel.length>0&&sel.every(c=>S.checked.has(c.id));}S.step=0;S.part=0;PARTS_DONE.clear();build();
 }
 listEl.onclick=e=>{
   const cb=e.target.closest('[data-check]');
   if(cb){setChecked(cb.dataset.check,cb.checked);return;}
-  const one=e.target.closest('[data-copyone]');if(one){const c=S.all.find(x=>x.id===one.dataset.copyone);copyText(md(c,Infinity),'Copied',one);return;}
+  const one=e.target.closest('[data-copyone]');if(one){const c=S.all.find(x=>x.id===one.dataset.copyone);copyText(R(md(c,Infinity)),'Copied',one);return;}
   const op=e.target.closest('[data-open]');
   if(op){const row=op.closest('.chat'),was=row.classList.contains('open');
     listEl.querySelectorAll('.chat.open').forEach(r=>r.classList.remove('open'));
     if(!was){row.classList.add('open');S.open=op.dataset.open;}else S.open=null;}
 };
-document.querySelectorAll('input[name=mode]').forEach(r=>r.onchange=build);
-document.getElementById('copy').onclick=()=>copyText($('out').value,'Copied. Paste it into a new chat.',$('copy'));
+document.getElementById('copy').onclick=async()=>{
+  const multi=!$('partNav').hidden;
+  const ok=await copyText($('out').value,multi?'Part '+(S.part+1)+' copied. Paste it, wait for the reply, then come back.':'Copied. Paste it into a new chat.',multi?null:$('copy'));
+  if(ok&&multi){PARTS_DONE.add(S.part);build();flash($('copy'));}
+};
+$('prevPart').onclick=()=>{S.part--;build();};
+$('nextPart').onclick=()=>{S.part++;build();};
 document.querySelectorAll('.method').forEach(b=>b.onclick=()=>setMethod(b.dataset.m));
 $('copyEach').onclick=async()=>{const t=S.all.filter(c=>S.checked.has(c.id))[S.step];const ok=await copyText($('outEach').value,'Copied. Paste it into a new chat, then press Next.');if(!ok)return;DONE.add(t.id);saveDone();build();flash($('copyEach'));};
 $('prevStep').onclick=()=>{S.step--;build();};
@@ -931,8 +1137,8 @@ document.addEventListener('keydown',e=>{
     else if(!$('pBundle').hidden&&!$('copy').disabled)$('copy').click();
     return;
   }
-  if(k==='n'&&!$('pEach').hidden&&!$('nextStep').disabled){$('nextStep').click();return;}
-  if(k==='p'&&!$('pEach').hidden&&!$('prevStep').disabled){$('prevStep').click();return;}
+  if(k==='n'){if(!$('pEach').hidden&&!$('nextStep').disabled)$('nextStep').click();else if(!$('pBundle').hidden&&!$('partNav').hidden&&!$('nextPart').disabled)$('nextPart').click();return;}
+  if(k==='p'){if(!$('pEach').hidden&&!$('prevStep').disabled)$('prevStep').click();else if(!$('pBundle').hidden&&!$('partNav').hidden&&!$('prevPart').disabled)$('prevPart').click();return;}
 });
 // keep the cursor ring after the list re-renders
 const _render=render;render=function(){_render();if(CUR>=0){const r=rows();if(CUR<r.length)r[CUR].classList.add('is-cursor');else CUR=-1;}};
