@@ -709,9 +709,9 @@ async function load(){
   document.getElementById('exampleNote').hidden=!S.examples;
   render();
 }
-const visible=()=>{
-  const q=S.q.trim().toLowerCase();
-  const list=S.all.filter(c=>(S.filter==='all'||c.source===S.filter)&&(!q||c.title.toLowerCase().includes(q)||c.messages.some(m=>m.text.toLowerCase().includes(q))));
+/* the list in display order: memory first, then the chosen sort, forks tucked under their original */
+const ordered=()=>{
+  const list=S.all.slice();
   const cmp=S.sort==='old'?(a,b)=>(a.updated||0)-(b.updated||0):S.sort==='long'?(a,b)=>b.messages.length-a.messages.length:(a,b)=>(b.updated||0)-(a.updated||0);
   list.sort((a,b)=>{const am=a.kind==='memory',bm=b.kind==='memory';if(am!==bm)return am?-1:1;return cmp(a,b);});
   // keep forks right under their original
@@ -724,6 +724,7 @@ const visible=()=>{
   }
   return out;
 };
+const visible=()=>{const q=S.q.trim().toLowerCase();return ordered().filter(c=>(S.filter==='all'||c.source===S.filter)&&(!q||c.title.toLowerCase().includes(q)||c.messages.some(m=>m.text.toLowerCase().includes(q))));};
 const selectable=list=>list.filter(c=>!c.dupOf);
 const label=s=>s==='chatgpt'?'ChatGPT':s==='gemini'?'Gemini':'Claude';
 const isProj=c=>c.kind==='project';
@@ -916,7 +917,7 @@ const memWhere=d=>d==='claude'?'Settings → Profile → <b>What should Claude k
 const destName=d=>d==='chatgpt'?'ChatGPT':d==='gemini'?'Gemini':'Claude';
 function setMethod(m){S.method=m;document.querySelectorAll('.method').forEach(b=>b.setAttribute('aria-checked',String(b.dataset.m===m)));build();}
 function build(){
-  const targets=S.all.filter(c=>S.checked.has(c.id));
+  const targets=ordered().filter(c=>S.checked.has(c.id));
   const d=S.dest,name=destName(d),n=targets.length;
   // method cards
   const rec=recommend(n,d);
@@ -938,7 +939,7 @@ function build(){
   if(n){
     const raw=targets.map(c=>md(c,Infinity)).join('\n');
     const h=findPII(raw);
-    const parts=[['email','email address'],['phone','phone number'],['card','card number'],['key','key or token']].filter(([k])=>h[k].length).map(([k,l])=>h[k].length+' '+l+(h[k].length===1?'':'s'));
+    const parts=[['email','email address','email addresses'],['phone','phone number','phone numbers'],['card','card number','card numbers'],['key','key or token','keys or tokens']].filter(([k])=>h[k].length).map(([k,one,many])=>h[k].length+' '+(h[k].length===1?one:many));
     const any=parts.length>0;
     $('redactSum').textContent=any?'Found '+parts.join(', ')+'.':'Nothing that looks personal found in this selection.';
     $('redactPeek').hidden=!any;
@@ -1063,12 +1064,12 @@ document.getElementById('copy').onclick=async()=>{
 $('prevPart').onclick=()=>{S.part--;build();};
 $('nextPart').onclick=()=>{S.part++;build();};
 document.querySelectorAll('.method').forEach(b=>b.onclick=()=>setMethod(b.dataset.m));
-$('copyEach').onclick=async()=>{const t=S.all.filter(c=>S.checked.has(c.id))[S.step];const ok=await copyText($('outEach').value,'Copied. Paste it into a new chat, then press Next.');if(!ok)return;DONE.add(t.id);saveDone();build();flash($('copyEach'));};
+$('copyEach').onclick=async()=>{const t=ordered().filter(c=>S.checked.has(c.id))[S.step];const ok=await copyText($('outEach').value,'Copied. Paste it into a new chat, then press Next.');if(!ok)return;DONE.add(t.id);saveDone();build();flash($('copyEach'));};
 $('prevStep').onclick=()=>{S.step--;build();};
 $('nextStep').onclick=()=>{S.step++;build();};
 $('dlFolder').onclick=async()=>{
   if(typeof JSZip==='undefined'){toast('The zip library did not load. Reload and try again.');return;}
-  const targets=S.all.filter(c=>S.checked.has(c.id));
+  const targets=ordered().filter(c=>S.checked.has(c.id));
   const plan=folderPlan(targets);
   const zip=new JSZip();for(const k in plan.files)zip.file('chat-transfer/'+k,plan.files[k]);
   $('dlFolder').disabled=true;$('dlFolder').textContent='Building…';
